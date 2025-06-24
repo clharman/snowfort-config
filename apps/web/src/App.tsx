@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useCore } from './hooks/useCore';
 import { EngineCard } from './components/EngineCard';
+import { SettingsCard } from './components/SettingsCard';
 import { ProjectsView } from './components/ProjectsView';
+import { RawView } from './components/RawView';
 
 type View = 'global' | 'projects' | 'raw';
 
@@ -40,6 +42,48 @@ function App() {
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);
       }
+    } else {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 5000);
+    }
+  };
+
+  const handleArrayUpdate = async (engineId: string, key: string, value: string[]) => {
+    setSaveStatus('saving');
+    
+    const patchObj = {
+      [engineId]: {
+        [key]: value
+      }
+    };
+    
+    const result = await patch(patchObj);
+    setLastResult(result);
+    
+    if (result.success) {
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } else {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 5000);
+    }
+  };
+
+  const handleStringUpdate = async (engineId: string, key: string, value: string) => {
+    setSaveStatus('saving');
+    
+    const patchObj = {
+      [engineId]: {
+        [key]: value
+      }
+    };
+    
+    const result = await patch(patchObj);
+    setLastResult(result);
+    
+    if (result.success) {
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
     } else {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 5000);
@@ -259,14 +303,30 @@ function App() {
                 <p className="text-gray-500 dark:text-gray-400">No AI CLI tools detected</p>
               </div>
             ) : (
-              engines.map(([engineId, engineData]) => (
-                <EngineCard
-                  key={engineId}
-                  engineId={engineId}
-                  engineData={engineData}
-                  onToggle={handleToggle}
-                />
-              ))
+              engines.map(([engineId, engineData]) => {
+                // Use SettingsCard for settings engines, EngineCard for others
+                if (engineId.includes('settings')) {
+                  return (
+                    <SettingsCard
+                      key={engineId}
+                      engineId={engineId}
+                      engineData={engineData}
+                      onToggle={handleToggle}
+                      onArrayUpdate={handleArrayUpdate}
+                      onStringUpdate={handleStringUpdate}
+                    />
+                  );
+                } else {
+                  return (
+                    <EngineCard
+                      key={engineId}
+                      engineId={engineId}
+                      engineData={engineData}
+                      onToggle={handleToggle}
+                    />
+                  );
+                }
+              })
             )}
           </div>
         )}
@@ -278,36 +338,7 @@ function App() {
         )}
 
         {currentView === 'raw' && (
-          <div className="w-full">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Raw Configuration</h2>
-            {engines.map(([engineId, engineData]) => {
-              const configData = Object.fromEntries(
-                Object.entries(engineData).filter(([key]) => !key.startsWith('_'))
-              );
-              const jsonString = JSON.stringify(configData, null, 2);
-              const lineCount = jsonString.split('\n').length;
-              
-              return (
-                <div key={engineId} className="mb-8">
-                  <div className="flex justify-between items-center mb-3">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                        {engineData._meta?.name || engineId}
-                      </h3>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {engineData._meta?.configPath} • {lineCount} lines
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 border w-full overflow-hidden">
-                    <pre className="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words overflow-x-auto max-h-96 overflow-y-auto w-full">
-                      {jsonString}
-                    </pre>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <RawView engines={engines} />
         )}
       </main>
     </div>
