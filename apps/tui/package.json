@@ -1,0 +1,29 @@
+{
+  "name": "@snowfort/config-tui",
+  "version": "0.0.1",
+  "description": "Terminal UI for Snowfort Config",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "start": "node ./dist/index.js",
+    "test": "vitest",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@snowfort/config-core": "workspace:*",
+    "ink": "^4.4.1",
+    "react": "^18.2.0",
+    "commander": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/node": "^20.10.0",
+    "eslint": "^8.55.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  }
+}

@@ -1,0 +1,272 @@
+import { EventEmitter } from 'events';
+import chokidar from 'chokidar';
+import updateNotifier from 'update-notifier';
+import { EngineAdapter, CoreServiceAPI, BackupInfo, EngineState, ServiceConfig } from '../types/index.js';
+import { BackupService } from './backup.js';
+import { ClaudeAdapter, CodexAdapter } from '../adapters/index.js';
+
+export class CoreService extends EventEmitter implements CoreServiceAPI {
+  private adapters: Map<string, EngineAdapter> = new Map();
+  private state: Map<string, EngineState> = new Map();
+  private backupService: BackupService;
+  private watchers: Map<string, chokidar.FSWatcher> = new Map();
+  private config: ServiceConfig;
+
+  constructor(config: ServiceConfig = {}) {
+    super();
+    this.config = config;
+    this.backupService = new BackupService();
+    this.registerAdapters();
+  }
+
+  private registerAdapters(): void {
+    const adapters = [
+      new ClaudeAdapter(),
+      new CodexAdapter()
+    ];
+
+    for (const adapter of adapters) {
+      this.adapters.set(adapter.id, adapter);
+    }
+  }
+
+  async initialize(): Promise<void> {
+    await this.refreshState();
+    this.setupFileWatchers();
+  }
+
+  async refreshState(): Promise<void> {
+    for (const [id, adapter] of this.adapters) {
+      try {
+        const detected = await adapter.detect();
+        if (detected) {
+          const data = await adapter.read();
+          const stat = await import('fs/promises').then(fs => 
+            fs.stat(adapter.getConfigPath())
+          );
+          
+          this.state.set(id, {
+            id,
+            name: adapter.name,
+            configPath: adapter.getConfigPath(),
+            lastModified: stat.mtime,
+            data,
+            detected: true
+          });
+        } else {
+          this.state.set(id, {
+            id,
+            name: adapter.name,
+            configPath: adapter.getConfigPath(),
+            lastModified: new Date(0),
+            data: {},
+            detected: false
+          });
+        }
+      } catch (error) {
+        console.error(`Failed to read config for ${id}:`, error);
+        this.state.set(id, {
+          id,
+          name: adapter.name,
+          configPath: adapter.getConfigPath(),
+          lastModified: new Date(0),
+          data: {},
+          detected: false
+        });
+      }
+    }
+    
+    this.emit('stateChanged', this.getStateSync());
+  }
+
+  private setupFileWatchers(): void {
+    for (const [id, adapter] of this.adapters) {
+      const configPath = adapter.getConfigPath();
+      
+      if (this.watchers.has(id)) {
+        this.watchers.get(id)?.close();
+      }
+      
+      const watcher = chokidar.watch(configPath, {
+        ignoreInitial: true,
+        awaitWriteFinish: {
+          stabilityThreshold: 100,
+          pollInterval: 10
+        }
+      });
+      
+      watcher.on('change', () => {
+        this.handleFileChange(id);
+      });
+      
+      this.watchers.set(id, watcher);
+    }
+  }
+
+  private async handleFileChange(engineId: string): Promise<void> {
+    try {
+      const adapter = this.adapters.get(engineId);
+      if (!adapter) return;
+      
+      const data = await adapter.read();
+      const stat = await import('fs/promises').then(fs => 
+        fs.stat(adapter.getConfigPath())
+      );
+      
+      const currentState = this.state.get(engineId);
+      if (currentState) {
+        this.state.set(engineId, {
+          ...currentState,
+          data,
+          lastModified: stat.mtime,
+          detected: true
+        });
+        
+        this.emit('stateChanged', this.getStateSync());
+      }
+    } catch (error) {
+      console.error(`Failed to handle file change for ${engineId}:`, error);
+    }
+  }
+
+  async getState(): Promise<Record<string, any>> {
+    return this.getStateSync();
+  }
+
+  private getStateSync(): Record<string, any> {
+    const result: Record<string, any> = {};
+    for (const [id, state] of this.state) {
+      result[id] = {
+        ...state.data,
+        _meta: {
+          engine: id,
+          name: state.name,
+          configPath: state.configPath,
+          lastModified: state.lastModified.toISOString(),
+          detected: state.detected
+        }
+      };
+    }
+    return result;
+  }
+
+  async patch(patchObj: any): Promise<{ success: boolean; errors: string[] }> {
+    const errors: string[] = [];
+    
+    for (const [engineId, enginePatch] of Object.entries(patchObj)) {
+      if (engineId.startsWith('_')) continue;
+      
+      const adapter = this.adapters.get(engineId);
+      const currentState = this.state.get(engineId);
+      
+      if (!adapter || !currentState) {
+        errors.push(`Unknown engine: ${engineId}`);
+        continue;
+      }
+      
+      try {
+        const newData = this.deepMerge(currentState.data, enginePatch);
+        
+        const validation = await adapter.validate(newData);
+        if (!validation.valid) {
+          errors.push(...validation.errors.map(err => `${engineId}: ${err}`));
+          continue;
+        }
+        
+        await this.backupService.createBackup(
+          engineId, 
+          adapter.getConfigPath(), 
+          currentState.data
+        );
+        
+        await adapter.write(newData);
+        
+        this.state.set(engineId, {
+          ...currentState,
+          data: newData,
+          lastModified: new Date()
+        });
+        
+      } catch (error) {
+        errors.push(`${engineId}: ${(error as Error).message}`);
+      }
+    }
+    
+    if (errors.length === 0) {
+      this.emit('stateChanged', this.getStateSync());
+    }
+    
+    return {
+      success: errors.length === 0,
+      errors
+    };
+  }
+
+  private deepMerge(target: any, source: any): any {
+    if (source === null || source === undefined) return target;
+    if (typeof source !== 'object') return source;
+    if (Array.isArray(source)) return source;
+    
+    const result = { ...target };
+    
+    for (const key in source) {
+      if (source[key] === null || source[key] === undefined) {
+        result[key] = source[key];
+      } else if (typeof source[key] === 'object' && !Array.isArray(source[key])) {
+        result[key] = this.deepMerge(result[key] || {}, source[key]);
+      } else {
+        result[key] = source[key];
+      }
+    }
+    
+    return result;
+  }
+
+  async listBackups(engine?: string): Promise<BackupInfo[]> {
+    return this.backupService.listBackups(engine);
+  }
+
+  async restoreBackup(path: string): Promise<boolean> {
+    const success = await this.backupService.restoreBackup(path);
+    if (success) {
+      await this.refreshState();
+    }
+    return success;
+  }
+
+  async checkUpdate(): Promise<{ latest: string; current: string; url: string }> {
+    if (this.config.noUpdateCheck) {
+      return {
+        latest: '0.0.1',
+        current: '0.0.1',
+        url: ''
+      };
+    }
+    
+    try {
+      const notifier = updateNotifier({
+        pkg: { name: '@snowfort/config', version: '0.0.1' }
+      });
+      
+      return {
+        latest: notifier.update?.latest || '0.0.1',
+        current: '0.0.1',
+        url: 'https://github.com/snowfort/config'
+      };
+    } catch (error) {
+      return {
+        latest: '0.0.1',
+        current: '0.0.1',
+        url: ''
+      };
+    }
+  }
+
+  async cleanup(): Promise<void> {
+    for (const watcher of this.watchers.values()) {
+      await watcher.close();
+    }
+    this.watchers.clear();
+    await this.backupService.cleanupOldBackups();
+  }
+}

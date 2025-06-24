@@ -1,0 +1,42 @@
+{
+  "name": "@snowfort/config",
+  "version": "0.0.1",
+  "description": "Lightweight utility for managing generative AI CLI configurations",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "sfconfig": "./bin/sfconfig.js"
+  },
+  "scripts": {
+    "dev": "pnpm --recursive run dev",
+    "build": "pnpm --recursive run build",
+    "test": "pnpm --recursive run test",
+    "lint": "pnpm --recursive run lint",
+    "typecheck": "pnpm --recursive run typecheck",
+    "clean": "pnpm --recursive run clean"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "playwright": "^1.53.1",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "keywords": [
+    "ai",
+    "claude",
+    "configuration",
+    "cli",
+    "management"
+  ],
+  "author": "Snowfort",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.1.0"
+  }
+}
