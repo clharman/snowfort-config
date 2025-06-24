@@ -168,8 +168,8 @@ function App() {
   const engines = Object.entries(state).filter(([key]) => !key.startsWith('_'));
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      <nav className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-900 transition-colors" style={{width: '100%', minWidth: '100%', maxWidth: 'none'}}>
+      <nav className="sticky top-0 z-50 w-full bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="w-full px-6">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -250,9 +250,9 @@ function App() {
         </div>
       </nav>
 
-      <main className="w-full px-6 py-8">
+      <main className="w-full max-w-none px-6 py-8" style={{width: '100%'}}>
         {currentView === 'global' && (
-          <div>
+          <div className="w-full">
             <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Global Configuration</h2>
             {engines.length === 0 ? (
               <div className="text-center py-12">
@@ -272,11 +272,13 @@ function App() {
         )}
 
         {currentView === 'projects' && (
-          <ProjectsView engines={engines} onProjectUpdate={handleProjectUpdate} />
+          <div className="w-full">
+            <ProjectsView engines={engines} onProjectUpdate={handleProjectUpdate} />
+          </div>
         )}
 
         {currentView === 'raw' && (
-          <div>
+          <div className="w-full">
             <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Raw Configuration</h2>
             {engines.map(([engineId, engineData]) => {
               const configData = Object.fromEntries(

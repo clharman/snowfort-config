@@ -39,7 +39,7 @@ export function ProjectsView({ engines, onProjectUpdate }: ProjectsViewProps) {
   const codexCount = allProjects.filter(p => p.engine === 'openai-codex').length;
 
   return (
-    <div>
+    <div className="w-full">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Projects Overview</h2>
         
@@ -87,7 +87,7 @@ export function ProjectsView({ engines, onProjectUpdate }: ProjectsViewProps) {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="w-full grid gap-4">
           {filteredProjects.map((project) => (
             <ProjectCard
               key={`${project.engine}-${project.path}`}
