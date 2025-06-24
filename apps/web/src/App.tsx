@@ -170,7 +170,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <nav className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-6">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -250,7 +250,7 @@ function App() {
         </div>
       </nav>
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full px-6 py-8">
         {currentView === 'global' && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Global Configuration</h2>
