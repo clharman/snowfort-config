@@ -16,6 +16,14 @@ let connectedClients: express.Response[] = [];
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../dist')));
 
+// Health check endpoint
+app.get('/api/health', (_req, res) => {
+  if (!core) {
+    return res.status(503).json({ status: 'initializing', message: 'CoreService not ready' });
+  }
+  res.json({ status: 'ready', message: 'Server is ready' });
+});
+
 app.get('/api/state', async (_req, res) => {
   try {
     const state = await core.getState();
@@ -106,21 +114,32 @@ function broadcastState(state: any) {
 
 async function startServer() {
   try {
-    core = new CoreService();
+    console.log('Initializing Snowfort Config server...');
     
+    core = new CoreService();
     core.on('stateChanged', broadcastState);
     
+    console.log('Initializing CoreService...');
     await core.initialize();
     
-    app.listen(port, () => {
-      console.log(`Snowfort Config web server running at http://localhost:${port}`);
+    console.log('Loading initial state...');
+    const initialState = await core.getState();
+    
+    console.log('Starting HTTP server...');
+    const server = app.listen(port, () => {
+      console.log(`✅ Snowfort Config web server ready at http://localhost:${port}`);
+      console.log(`   Detected ${Object.keys(initialState).length} configuration engines`);
     });
     
-    const initialState = await core.getState();
+    // Wait for server to actually be listening
+    await new Promise<void>((resolve) => {
+      server.on('listening', resolve);
+    });
+    
     broadcastState(initialState);
     
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 }

@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build && tsc -p tsconfig.server.json",
     "build:server": "tsc -p tsconfig.server.json",
+    "start": "node dist-server/index.js",
+    "start:wait": "node dist-server/index.js & sleep 1 && until curl -s http://localhost:4040/api/health | grep -q '\"status\":\"ready\"'; do sleep 0.5; done && echo '🚀 Server is ready!' && wait",
     "preview": "vite preview",
     "test": "vitest",
     "lint": "eslint src/",
