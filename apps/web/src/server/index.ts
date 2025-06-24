@@ -30,9 +30,11 @@ app.post('/api/patch', async (req, res) => {
     const result = await core.patch(req.body);
     res.json(result);
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     res.status(500).json({ 
       success: false, 
-      errors: [error instanceof Error ? error.message : 'Unknown error'] 
+      errors: [`Server error: ${errorMessage}`],
+      warnings: []
     });
   }
 });

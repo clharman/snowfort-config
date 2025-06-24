@@ -150,8 +150,9 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
     return result;
   }
 
-  async patch(patchObj: any): Promise<{ success: boolean; errors: string[] }> {
+  async patch(patchObj: any): Promise<{ success: boolean; errors: string[]; warnings: string[] }> {
     const errors: string[] = [];
+    const warnings: string[] = [];
     
     for (const [engineId, enginePatch] of Object.entries(patchObj)) {
       if (engineId.startsWith('_')) continue;
@@ -159,9 +160,18 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
       const adapter = this.adapters.get(engineId);
       const currentState = this.state.get(engineId);
       
-      if (!adapter || !currentState) {
-        errors.push(`Unknown engine: ${engineId}`);
+      if (!adapter) {
+        errors.push(`Engine "${engineId}" is not supported. Available engines: ${Array.from(this.adapters.keys()).join(', ')}`);
         continue;
+      }
+      
+      if (!currentState) {
+        errors.push(`Engine "${engineId}" configuration not found. Ensure the configuration file exists.`);
+        continue;
+      }
+      
+      if (!currentState.detected) {
+        warnings.push(`Configuration file for "${engineId}" was not detected. Changes may not persist.`);
       }
       
       try {
@@ -169,15 +179,20 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
         
         const validation = await adapter.validate(newData);
         if (!validation.valid) {
-          errors.push(...validation.errors.map(err => `${engineId}: ${err}`));
+          errors.push(...validation.errors.map(err => `${adapter.name}: ${err}`));
           continue;
         }
         
-        await this.backupService.createBackup(
-          engineId, 
-          adapter.getConfigPath(), 
-          currentState.data
-        );
+        // Create backup before writing
+        try {
+          await this.backupService.createBackup(
+            engineId, 
+            adapter.getConfigPath(), 
+            currentState.data
+          );
+        } catch (backupError) {
+          warnings.push(`Failed to create backup for ${adapter.name}: ${(backupError as Error).message}`);
+        }
         
         await adapter.write(newData);
         
@@ -188,7 +203,16 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
         });
         
       } catch (error) {
-        errors.push(`${engineId}: ${(error as Error).message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        if (errorMessage.includes('ENOENT')) {
+          errors.push(`Configuration file not found for ${adapter.name}. File: ${adapter.getConfigPath()}`);
+        } else if (errorMessage.includes('EACCES')) {
+          errors.push(`Permission denied writing to ${adapter.name} configuration. Check file permissions.`);
+        } else if (errorMessage.includes('JSON')) {
+          errors.push(`Invalid JSON format for ${adapter.name}: ${errorMessage}`);
+        } else {
+          errors.push(`${adapter.name}: ${errorMessage}`);
+        }
       }
     }
     
@@ -198,7 +222,8 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
     
     return {
       success: errors.length === 0,
-      errors
+      errors,
+      warnings
     };
   }
 

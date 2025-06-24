@@ -44,47 +44,59 @@ export function EngineCard({ engineId, engineData, onToggle }: EngineCardProps) 
       {detected && (
         <div className="space-y-3">
           {engineData.verbose !== undefined && (
-            <div className="flex items-center justify-between pointer-events-none">
+            <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Verbose mode</span>
-              <label className="relative inline-flex items-center cursor-pointer pointer-events-auto">
-                <input
-                  type="checkbox"
-                  checked={engineData.verbose}
-                  onChange={(e) => onToggle(engineId, 'verbose', e.target.checked)}
-                  className="sr-only peer"
+              <button
+                onClick={() => onToggle(engineId, 'verbose', !engineData.verbose)}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                style={{
+                  backgroundColor: engineData.verbose ? '#2563eb' : '#d1d5db'
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    engineData.verbose ? 'translate-x-6' : 'translate-x-1'
+                  }`}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
+              </button>
             </div>
           )}
 
           {engineData.bypassPermissionsModeAccepted !== undefined && (
-            <div className="flex items-center justify-between pointer-events-none">
+            <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Bypass permissions mode</span>
-              <label className="relative inline-flex items-center cursor-pointer pointer-events-auto">
-                <input
-                  type="checkbox"
-                  checked={engineData.bypassPermissionsModeAccepted}
-                  onChange={(e) => onToggle(engineId, 'bypassPermissionsModeAccepted', e.target.checked)}
-                  className="sr-only peer"
+              <button
+                onClick={() => onToggle(engineId, 'bypassPermissionsModeAccepted', !engineData.bypassPermissionsModeAccepted)}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                style={{
+                  backgroundColor: engineData.bypassPermissionsModeAccepted ? '#2563eb' : '#d1d5db'
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    engineData.bypassPermissionsModeAccepted ? 'translate-x-6' : 'translate-x-1'
+                  }`}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
+              </button>
             </div>
           )}
 
           {engineData.completedOnboarding !== undefined && (
-            <div className="flex items-center justify-between pointer-events-none">
+            <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Completed onboarding</span>
-              <label className="relative inline-flex items-center cursor-pointer pointer-events-auto">
-                <input
-                  type="checkbox"
-                  checked={engineData.completedOnboarding}
-                  onChange={(e) => onToggle(engineId, 'completedOnboarding', e.target.checked)}
-                  className="sr-only peer"
+              <button
+                onClick={() => onToggle(engineId, 'completedOnboarding', !engineData.completedOnboarding)}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                style={{
+                  backgroundColor: engineData.completedOnboarding ? '#2563eb' : '#d1d5db'
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    engineData.completedOnboarding ? 'translate-x-6' : 'translate-x-1'
+                  }`}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
+              </button>
             </div>
           )}
 
