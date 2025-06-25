@@ -12,6 +12,7 @@
   "scripts": {
     "dev": "pnpm --recursive run dev",
     "build": "pnpm --recursive run build",
+    "start:web": "./start-web.sh",
     "test": "pnpm --recursive run test",
     "lint": "pnpm --recursive run lint",
     "typecheck": "pnpm --recursive run typecheck",

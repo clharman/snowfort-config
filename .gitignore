@@ -97,3 +97,6 @@ Thumbs.db
 # Backup files
 *.backup
 .sfconfig-backups/
+
+# Example data for development
+examples/

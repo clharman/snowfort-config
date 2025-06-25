@@ -18,8 +18,18 @@ pnpm --filter @snowfort/config-core run build
 # Build only web app (includes server)
 pnpm --filter @snowfort/config-web run build
 
-# Start development mode (all packages in watch mode)
-pnpm dev
+# IMPORTANT: Web development uses build-first workflow
+# NOT hot-reload like typical React apps
+
+# For web development:
+# 1. Build the web app first:
+cd apps/web && pnpm build
+
+# 2. Start the integrated server (serves built frontend + API):
+node dist-server/index.js &
+
+# Alternative: Use the convenience script from project root:
+./start-dev.sh
 
 # Run linting across all packages
 pnpm lint
@@ -36,8 +46,17 @@ pnpm clean
 # Test TUI locally
 node apps/tui/dist/index.js
 
-# Test web server locally  
-node apps/web/dist-server/index.js
+# Start web development server (recommended)
+./start-dev.sh
+
+# Alternative: Manual web server startup
+cd apps/web && pnpm build && node dist-server/index.js &
+
+# Check server health
+curl http://localhost:4040/api/health
+
+# Stop development server (if port conflict occurs)
+pkill -f "node.*dist-server" || echo "No servers to kill"
 
 # Test CLI binary
 node bin/sfconfig.js --help
@@ -48,6 +67,23 @@ node bin/sfconfig.js web --port 3000
 pnpm test
 ```
 
+### Port Conflict Resolution
+```bash
+# If you get "EADDRINUSE" error on port 4040:
+
+# 1. Find what's using the port
+lsof -i :4040
+
+# 2. Kill the specific process
+kill [PID]
+
+# 3. Or kill all node servers on that port
+pkill -f "node.*dist-server"
+
+# 4. Then restart
+./start-dev.sh
+```
+
 ### API Testing
 ```bash
 # Test API endpoints (server must be running)
@@ -56,6 +92,30 @@ curl -X POST -H "Content-Type: application/json" \
   -d '{"claude-code": {"verbose": true}}' \
   http://localhost:4040/api/patch
 ```
+
+## Development Workflow Notes
+
+### Web Development Pattern
+This project uses a **build-first development workflow**, NOT the typical React hot-reload pattern:
+
+1. **Build Step Required**: Frontend must be built before running (`pnpm build`)
+2. **Integrated Server**: Express serves both built React frontend AND API endpoints
+3. **Single Port**: Everything runs on port 4040 (no proxying needed)
+4. **Production-like**: Development closely mirrors production deployment
+
+**Why This Pattern?**
+- Simpler deployment (single server binary)
+- No proxy configuration complexity
+- Consistent behavior between dev/prod
+- Server-Sent Events work reliably
+
+### Common Pitfalls to Avoid
+- ❌ Don't run `pnpm dev` (vite only) expecting API to work
+- ❌ Don't add proxy configurations to vite.config.ts
+- ❌ Don't assume hot-reload development workflow
+- ❌ Don't assume typical React dev patterns - always examine server code first to understand the intended architecture
+- ✅ Always build first, then run the integrated server
+- ✅ Use `./start-dev.sh` for automated setup
 
 ## Architecture Overview
 

@@ -41,10 +41,32 @@ node bin/sfconfig.js tui
 
 #### Web Interface
 ```bash
-# Start web server
+# Option 1: Use the CLI (recommended for production)
 node bin/sfconfig.js web --port 4040
 
+# Option 2: Start development server directly
+./start-dev.sh
+
+# Option 3: Manual development setup
+cd apps/web && pnpm build && node dist-server/index.js &
+
 # Open browser to http://localhost:4040
+```
+
+#### Development Server Management
+```bash
+# Start development server (builds and runs in background)
+./start-dev.sh
+
+# Check if server is running
+curl http://localhost:4040/api/health
+
+# Stop server (if port is in use)
+# Find process: lsof -i :4040
+# Kill process: kill [PID]
+
+# Or kill all node servers on port 4040:
+pkill -f "node.*dist-server"
 ```
 
 #### CLI Commands
@@ -81,8 +103,12 @@ pnpm --filter @snowfort/config-core run build
 # Build only web app (includes server)
 pnpm --filter @snowfort/config-web run build
 
-# Start development mode (all packages in watch mode)
-pnpm dev
+# IMPORTANT: Web development uses build-first workflow
+# Start development server (builds frontend + starts server)
+./start-dev.sh
+
+# Alternative: Manual development setup
+cd apps/web && pnpm build && node dist-server/index.js &
 
 # Run linting across all packages
 pnpm lint

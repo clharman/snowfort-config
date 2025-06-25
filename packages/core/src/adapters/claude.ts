@@ -7,6 +7,7 @@ export class ClaudeAdapter extends BaseAdapter {
   
   schema = {
     type: 'object',
+    additionalProperties: true, // Allow unknown properties from real config
     properties: {
       // Core configuration
       api_key: { type: 'string', description: 'API key for Claude service' },
@@ -31,7 +32,6 @@ export class ClaudeAdapter extends BaseAdapter {
       // Session and usage tracking
       firstStartTime: { 
         type: 'string', 
-        format: 'date-time',
         description: 'First time Claude Code was started'
       },
       numStartups: { 
@@ -65,7 +65,34 @@ export class ClaudeAdapter extends BaseAdapter {
       },
       oauthAccount: {
         type: 'object',
-        description: 'OAuth account information'
+        additionalProperties: true, // Allow unknown OAuth properties
+        properties: {
+          accountUuid: { 
+            type: 'string', 
+            description: 'Unique account identifier' 
+          },
+          emailAddress: { 
+            type: 'string', 
+            description: 'Account email address' 
+          },
+          organizationUuid: { 
+            type: 'string', 
+            description: 'Organization unique identifier' 
+          },
+          organizationRole: { 
+            type: 'string', 
+            description: 'Role within the organization (e.g., admin, member)' 
+          },
+          workspaceRole: { 
+            type: ['string', 'null'], 
+            description: 'Role within the workspace (can be null)' 
+          },
+          organizationName: { 
+            type: 'string', 
+            description: 'Name of the organization' 
+          }
+        },
+        description: 'OAuth account information including user and organization details'
       },
       
       // Updates and changelog
@@ -78,8 +105,7 @@ export class ClaudeAdapter extends BaseAdapter {
         description: 'Cached changelog content' 
       },
       changelogLastFetched: { 
-        type: 'string', 
-        format: 'date-time',
+        type: ['string', 'number'], 
         description: 'Last time changelog was fetched' 
       },
       
@@ -108,11 +134,11 @@ export class ClaudeAdapter extends BaseAdapter {
         type: 'object',
         additionalProperties: {
           type: 'object',
+          additionalProperties: true, // Allow unknown project properties
           properties: {
             // Runtime data (read-only)
             lastRun: { 
               type: 'string', 
-              format: 'date-time',
               description: 'Last time this project was used'
             },
             cost: { 
@@ -124,11 +150,84 @@ export class ClaudeAdapter extends BaseAdapter {
               description: 'Total duration for this project in seconds' 
             },
             
+            // Session and cost tracking (read-only)
+            lastCost: {
+              type: 'number',
+              description: 'Cost of the last session'
+            },
+            lastAPIDuration: {
+              type: 'number',
+              description: 'API duration of the last session in milliseconds'
+            },
+            lastDuration: {
+              type: 'number',
+              description: 'Total duration of the last session in milliseconds'
+            },
+            lastLinesAdded: {
+              type: 'number',
+              description: 'Lines added in the last session'
+            },
+            lastLinesRemoved: {
+              type: 'number',
+              description: 'Lines removed in the last session'
+            },
+            lastTotalInputTokens: {
+              type: 'number',
+              description: 'Total input tokens used in the last session'
+            },
+            lastTotalOutputTokens: {
+              type: 'number',
+              description: 'Total output tokens generated in the last session'
+            },
+            lastTotalCacheCreationInputTokens: {
+              type: 'number',
+              description: 'Cache creation input tokens in the last session'
+            },
+            lastTotalCacheReadInputTokens: {
+              type: 'number',
+              description: 'Cache read input tokens in the last session'
+            },
+            lastSessionId: {
+              type: 'string',
+              description: 'Unique identifier for the last session'
+            },
+            
             // Project configuration (editable)
             allowedTools: {
               type: 'array',
               items: { type: 'string' },
               description: 'Tools allowed for this project'
+            },
+            
+            // MCP context and server configuration
+            mcpContextUris: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Context URIs for MCP servers'
+            },
+            enabledMcpjsonServers: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Enabled MCP JSON servers'
+            },
+            disabledMcpjsonServers: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Disabled MCP JSON servers'
+            },
+            
+            // Trust and security settings
+            hasTrustDialogAccepted: {
+              type: 'boolean',
+              description: 'Whether the trust dialog has been accepted for this project'
+            },
+            hasClaudeMdExternalIncludesApproved: {
+              type: 'boolean',
+              description: 'Whether external includes in CLAUDE.md have been approved'
+            },
+            hasClaudeMdExternalIncludesWarningShown: {
+              type: 'boolean',
+              description: 'Whether the external includes warning has been shown'
             },
             mcpServers: {
               type: 'object',
@@ -191,8 +290,7 @@ export class ClaudeAdapter extends BaseAdapter {
         },
         description: 'Per-project configuration and runtime data'
       }
-    },
-    additionalProperties: true
+    }
   };
 
   protected parseConfig(content: string): any {
