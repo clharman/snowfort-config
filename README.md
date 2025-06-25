@@ -2,7 +2,21 @@
 
 A lightweight, cross-platform utility for reading, displaying, and safely editing local configuration files for generative AI CLIs including **Claude Code CLI**, **OpenAI Codex**, and **Gemini CLI**.
 
-## Features
+## 🚀 Quick Install & Run
+
+```bash
+# Launch Terminal UI (no installation required)
+npx sfconfig --tui
+
+# Launch Web UI (no installation required)  
+npx sfconfig --web
+
+# Or install globally
+npm install -g sfconfig
+sfconfig --help
+```
+
+## ✨ Features
 
 - **Multi-Engine Support**: Manages configurations for Claude Code CLI, OpenAI Codex, and Gemini CLI
 - **Dual Interface**: Both Terminal UI (TUI) and Web interface
@@ -12,11 +26,35 @@ A lightweight, cross-platform utility for reading, displaying, and safely editin
 - **Color-coded Interface**: Visual distinction between different AI engines
 - **Dark/Light Themes**: Full theme support across all interfaces
 
-## Quick Start
+## 📖 Usage Examples
 
-### Installation
+### Terminal UI
 
-#### Via npm/npx (Recommended)
+<img width="706" alt="image" src="https://github.com/user-attachments/assets/2cbbbe95-2da8-4b95-b2b1-4ed15a256f53" />
+
+```bash
+# Launch Terminal UI
+npx sfconfig --tui
+# or: sfconfig --tui (if installed globally)
+```
+
+### Web Interface
+
+<img width="1440" alt="image" src="https://github.com/user-attachments/assets/5b3c8cc7-3fa6-4efd-b4d0-6642eb1070bc" />
+
+```bash
+# Launch Web UI (default port 4040)
+npx sfconfig --web
+# or: sfconfig --web
+
+# Launch Web UI with custom port
+npx sfconfig --web --port 3000
+# or: sfconfig --web --port 3000
+```
+
+## 🛠️ Installation Options
+
+### Via npm/npx (Recommended)
 ```bash
 # Install globally
 npm install -g sfconfig
@@ -25,7 +63,7 @@ npm install -g sfconfig
 npx sfconfig --help
 ```
 
-#### From Source
+### From Source
 ```bash
 # Clone the repository
 git clone https://github.com/snowfort-ai/config.git
@@ -38,63 +76,8 @@ pnpm install
 pnpm build
 ```
 
-### Usage
+## 🎯 All Available Commands
 
-#### Terminal UI
-
-<img width="706" alt="image" src="https://github.com/user-attachments/assets/2cbbbe95-2da8-4b95-b2b1-4ed15a256f53" />
-
-#### Simple Flag-based Commands
-```bash
-# Launch Terminal UI
-npx sfconfig --tui
-# or: sfconfig --tui (if installed globally)
-
-# Launch Web UI (default port 4040)
-npx sfconfig --web
-# or: sfconfig --web
-
-# Launch Web UI with custom port
-npx sfconfig --web --port 3000
-# or: sfconfig --web --port 3000
-
-# Show help
-npx sfconfig --help
-```
-
-#### Web Interface
-
-<img width="1440" alt="image" src="https://github.com/user-attachments/assets/5b3c8cc7-3fa6-4efd-b4d0-6642eb1070bc" />
-
-#### Subcommand Style (also supported)
-```bash
-# Terminal UI
-npx sfconfig tui
-
-# Web interface with options
-npx sfconfig web --port 4040 --no-open
-
-# With custom config path
-npx sfconfig tui --config /path/to/config.json
-```
-
-#### Development Server Management
-```bash
-# Start development server (builds and runs in background)
-./start-dev.sh
-
-# Check if server is running
-curl http://localhost:4040/api/health
-
-# Stop server (if port is in use)
-# Find process: lsof -i :4040
-# Kill process: kill [PID]
-
-# Or kill all node servers on port 4040:
-pkill -f "node.*dist-server"
-```
-
-#### All Available Options
 ```bash
 # Show help
 sfconfig --help
@@ -111,20 +94,12 @@ sfconfig --web --no-open    # Don't auto-open browser
 sfconfig --tui --config /path/to/config.json    # Custom config path
 sfconfig --web --no-update-check                # Disable update notifications
 
-# Subcommand style (legacy support)
+# Subcommand style (also supported)
 sfconfig tui [options]      # Terminal UI subcommand
 sfconfig web [options]      # Web UI subcommand
 ```
 
-#### Development Testing
-```bash
-# Test built CLI locally (from source)
-node bin/sfconfig.js --help
-node bin/sfconfig.js --tui
-node bin/sfconfig.js --web --port 3000
-```
-
-## Development
+## 🛠️ Development
 
 ### Essential Commands
 
