@@ -1,10 +1,10 @@
 # Snowfort Config
 
-A lightweight, cross-platform utility for reading, displaying, and safely editing local configuration files for generative AI CLIs including **Claude Code CLI** and **OpenAI Codex**.
+A lightweight, cross-platform utility for reading, displaying, and safely editing local configuration files for generative AI CLIs including **Claude Code CLI**, **OpenAI Codex**, and **Gemini CLI**.
 
 ## Features
 
-- **Multi-Engine Support**: Manages configurations for Claude Code CLI and OpenAI Codex
+- **Multi-Engine Support**: Manages configurations for Claude Code CLI, OpenAI Codex, and Gemini CLI
 - **Dual Interface**: Both Terminal UI (TUI) and Web interface
 - **Real-time Updates**: File watching with live configuration updates
 - **Safe Editing**: Automatic backups and JSON schema validation
@@ -31,6 +31,9 @@ pnpm build
 ### Usage
 
 #### Terminal UI
+
+<img width="706" alt="image" src="https://github.com/user-attachments/assets/2cbbbe95-2da8-4b95-b2b1-4ed15a256f53" />
+
 ```bash
 # Launch TUI directly
 node apps/tui/dist/index.js
@@ -40,6 +43,9 @@ node bin/sfconfig.js tui
 ```
 
 #### Web Interface
+
+<img width="1440" alt="image" src="https://github.com/user-attachments/assets/5b3c8cc7-3fa6-4efd-b4d0-6642eb1070bc" />
+
 ```bash
 # Option 1: Use the CLI (recommended for production)
 node bin/sfconfig.js web --port 4040
