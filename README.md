@@ -186,25 +186,188 @@ New AI CLI tools are supported through the **EngineAdapter** interface. Each ada
 - `write(data)` - Safe atomic writes with backup
 - `getConfigPath()` - Resolve configuration file location
 
-Current adapters: `ClaudeAdapter` (`~/.claude.json`), `CodexAdapter` (`~/.codex/config.json`), `GeminiAdapter` (`~/.gemini/config.json`)
+Current adapters: `ClaudeAdapter` (`~/.claude.json`), `ClaudeSettingsAdapter` (`~/.claude/settings.json`), `CodexAdapter` (`~/.codex/config.json`), `GeminiAdapter` (`~/.gemini/settings.json`)
 
-### Configuration Files
+## Configuration Schemas & File Formats
 
-#### Claude Code CLI
-- **Primary**: `~/.claude.json` - Main configuration with projects and MCP servers
-- **Project Settings**: `<project>/.claude/settings.json` - Shared project settings
-- **Local Settings**: `<project>/.claude/settings.local.json` - Local-only settings
-- **MCP Configuration**: `<project>/.mcp.json` - Project MCP server definitions
+Snowfort Config supports **4 engine adapters** with comprehensive configuration management:
 
-#### OpenAI Codex
-- **Primary**: `~/.codex/config.json` - Main Codex configuration
+### 1. Claude Code CLI (`claude-code`)
 
-#### Gemini CLI
-- **Primary**: `~/.gemini/config.json` - Main Gemini configuration
-- **OAuth Credentials**: `~/.gemini/oauth_creds.json` - Authentication tokens
-- **User ID**: `~/.gemini/user_id` - User identification
-- **Context File**: `~/.gemini/GEMINI.md` - Context instructions for conversations
-- **Session Logs**: `~/.gemini/tmp/` - Conversation history and logs
+**Configuration File**: `~/.claude.json`
+
+**Core Settings:**
+- `api_key` (string): API key for Claude service
+- `model` (string): Default model to use
+- `max_project_files` (number): Maximum project files to include
+- `verbose` (boolean): Enable verbose logging
+
+**Account & Authentication:**
+- `oauthAccount` (object): OAuth account information
+  - `accountUuid`, `emailAddress`, `organizationUuid`
+  - `organizationRole`, `workspaceRole`, `organizationName`
+
+**System Integration:**
+- `bypassPermissionsModeAccepted`, `hasCompletedOnboarding` (boolean)
+- `appleTerminalSetupInProgress`, `optionAsMetaKeyInstalled` (boolean)
+- `installMethod` (string): Installation method used
+
+**Projects Configuration:**
+Each project path contains:
+- **Runtime Data**: `lastRun`, `cost`, `duration`, token usage metrics
+- **Tool Permissions**: `allowedTools` (array): Permitted tools for project
+- **MCP Integration**: `mcpContextUris`, `enabledMcpjsonServers`, `disabledMcpjsonServers`
+- **MCP Servers**: Server definitions with `command`, `args`, `env`
+
+**Example Project Structure:**
+```json
+{
+  "/Users/user/project": {
+    "allowedTools": ["bash", "str_replace_editor"],
+    "mcpServers": {
+      "playwright": {
+        "command": "npx",
+        "args": ["@playwright/mcp@latest", "--image-responses", "allow"],
+        "env": { "NODE_ENV": "development" }
+      }
+    },
+    "lastRun": "2024-01-15T10:30:00Z",
+    "cost": 0.45,
+    "duration": 1200
+  }
+}
+```
+
+### 2. Claude Settings (`claude-settings`)
+
+**Configuration Files** (in precedence order):
+1. `~/.claude/settings.json` (global)
+2. `.claude/settings.json` (project shared)
+3. `.claude/settings.local.json` (project local)
+
+**Permission Management:**
+- `permissions.allowedTools`, `permissions.deniedTools` (arrays)
+
+**System Configuration:**
+- `env` (object): Environment variables for Claude sessions
+- `apiKeyHelper` (string): Path to authentication script
+- `cleanupPeriodDays` (number): Chat transcript retention
+- `includeCoAuthoredBy` (boolean): Include Claude byline in commits
+
+**Model Settings:**
+- `defaultModel` (string): Default model for new sessions
+- `maxTokens` (number): Maximum tokens per request
+- `temperature` (number, 0-2): Model response temperature
+- `timeout` (number): Request timeout in milliseconds
+
+### 3. OpenAI Codex (`codex`)
+
+**Configuration File**: `~/.codex/config.json`
+
+**Provider & Model Configuration:**
+- `model` (string): AI model to use (e.g., "o4-mini")
+- `provider` (string): Provider name (e.g., "azure")
+- `providers` (object): Provider configurations
+  ```json
+  {
+    "azure": {
+      "name": "AzureOpenAI",
+      "baseURL": "https://openai-all-purpose.openai.azure.com/openai",
+      "envKey": "AZURE_OPENAI_API_KEY"
+    }
+  }
+  ```
+
+**AI Configuration:**
+- `flexMode` (boolean): Enable flexible mode
+- `reasoningEffort` (enum): "Low", "Medium", "High"
+- `temperature`, `max_tokens` (number): Model parameters
+
+**Storage & History:**
+- `disableResponseStorage` (boolean): Disable response storage
+- `history.maxSize` (number): Maximum history size
+- `history.saveHistory` (boolean): Enable history saving
+- `history.sensitivePatterns` (array): Patterns to redact
+
+**Tool Configuration:**
+- `tools.shell.maxBytes`, `tools.shell.maxLines` (number): Shell output limits
+
+**Project Management:**
+- `projects` (object): Per-project configurations with usage statistics
+
+### 4. Gemini CLI (`gemini`)
+
+**Primary Configuration**: `~/.gemini/settings.json`
+
+**Additional Files:**
+- `~/.gemini/oauth_creds.json`: OAuth credentials (sensitive)
+- `~/.gemini/user_id`: Plain text user identifier
+- `~/.gemini/GEMINI.md`: Context instructions file
+- `~/.gemini/tmp/*/logs.json`: Session history logs
+
+**Visual & Interface:**
+- `theme` (enum): "Default", "GitHub", "Dark", "Light"
+- `selectedAuthType` (enum): "oauth-personal", "oauth-workspace", "api-key"
+- `contextFileName` (string): Context file name (default: GEMINI.md)
+- `preferredEditor` (enum): "vscode", "vim", "nano", "emacs", "cursor"
+
+**Execution Settings:**
+- `sandbox` (boolean|string): Sandboxing configuration
+- `autoAccept` (boolean): Auto-accept safe tool calls
+
+**Tool Management:**
+- `coreTools` (array): Allowed core tools
+- `excludeTools` (array): Excluded tools
+- `toolDiscoveryCommand`, `toolCallCommand` (string): Custom tool commands
+
+**MCP Server Configuration:**
+Same structure as Claude Code:
+```json
+{
+  "mcpServers": {
+    "server-name": {
+      "command": "string",
+      "args": ["array"],
+      "env": { "KEY": "value" }
+    }
+  }
+}
+```
+
+**Session & Conversation:**
+- `checkpointing` (boolean): Enable state saving/restoration
+- `conversationHistory.maxEntries` (number): Max conversation entries
+- `conversationHistory.saveToFile` (boolean): Save to file
+- `conversationHistory.filePath` (string): History file path
+
+**Advanced API Settings:**
+- `apiEndpoint` (string): Custom API endpoint
+- `model` (string): Default model
+- `maxTokens` (number): Token limit
+- `temperature` (number): Response temperature
+
+## Data Flow & Architecture
+
+### Configuration Detection & Loading
+1. **File Discovery**: Each adapter scans for its configuration files
+2. **Hierarchical Loading**: Claude settings support precedence-based loading
+3. **Real-time Monitoring**: chokidar watches for configuration changes
+4. **Event Broadcasting**: State changes notify TUI/web interfaces via events
+
+### Safe Configuration Management
+- **Automatic Backups**: Timestamped `.json` files in `.sfconfig-backups/`
+- **Schema Validation**: AJV validation (currently permissive to allow unknown fields)
+- **Atomic Operations**: Failed writes never corrupt original files
+- **Deep Merging**: Patch operations preserve unknown configuration fields
+
+### Multi-Engine Support
+The unified interface allows:
+- **Cross-engine Viewing**: See all AI CLI configurations in one place
+- **Consistent Editing**: Same interface for different configuration formats
+- **MCP Server Management**: Unified MCP server configuration across engines
+- **Project-based Organization**: View configurations by project directory
+
+This comprehensive schema support enables safe, unified management of all major AI CLI tool configurations while preserving the unique features and settings of each engine.
 
 ## Contributing
 
