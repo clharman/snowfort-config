@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import express from 'express';
 import path from 'path';
+import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { CoreService } from '@snowfort/config-core';
 
@@ -73,6 +74,70 @@ app.get('/api/update-check', async (_req, res) => {
     res.json(update);
   } catch (error) {
     res.status(500).json({ latest: '0.0.1', current: '0.0.1', url: '' });
+  }
+});
+
+// Read CLAUDE.md file from project path
+app.get('/api/project/:projectPath/claude-md', async (req, res) => {
+  try {
+    const projectPath = Buffer.from(req.params.projectPath, 'base64').toString();
+    const claudeMdPath = path.join(projectPath, 'CLAUDE.md');
+    
+    try {
+      const content = await fs.readFile(claudeMdPath, 'utf8');
+      res.json({ 
+        success: true, 
+        content,
+        path: claudeMdPath,
+        exists: true
+      });
+    } catch (error) {
+      if ((error as any).code === 'ENOENT') {
+        res.json({ 
+          success: true, 
+          content: '', 
+          path: claudeMdPath,
+          exists: false
+        });
+      } else {
+        throw error;
+      }
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(500).json({ 
+      success: false, 
+      error: `Failed to read CLAUDE.md: ${errorMessage}`
+    });
+  }
+});
+
+// Write CLAUDE.md file to project path
+app.post('/api/project/:projectPath/claude-md', async (req, res) => {
+  try {
+    const projectPath = Buffer.from(req.params.projectPath, 'base64').toString();
+    const claudeMdPath = path.join(projectPath, 'CLAUDE.md');
+    const { content } = req.body;
+    
+    if (typeof content !== 'string') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Content must be a string' 
+      });
+    }
+    
+    await fs.writeFile(claudeMdPath, content, 'utf8');
+    res.json({ 
+      success: true, 
+      path: claudeMdPath,
+      message: 'CLAUDE.md saved successfully'
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(500).json({ 
+      success: false, 
+      error: `Failed to write CLAUDE.md: ${errorMessage}`
+    });
   }
 });
 

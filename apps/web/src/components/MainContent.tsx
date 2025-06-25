@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 interface MainContentProps {
   selectedEngine: string | null;
@@ -36,6 +36,82 @@ export function MainContent({
   const [showMcpJsonEditor, setShowMcpJsonEditor] = useState(false);
   const [mcpJsonValue, setMcpJsonValue] = useState('');
   const [showCopyModal, setShowCopyModal] = useState(false);
+  
+  // State for CLAUDE.md file management
+  const [claudeMdContent, setClaudeMdContent] = useState<string>('');
+  const [claudeMdLoading, setClaudeMdLoading] = useState<boolean>(false);
+  const [claudeMdExists, setClaudeMdExists] = useState<boolean>(false);
+  const [claudeMdSaving, setClaudeMdSaving] = useState<boolean>(false);
+  
+  // Load CLAUDE.md content when claude-md section is selected
+  React.useEffect(() => {
+    const isProjectItem = selectedItem?.startsWith('project-');
+    if (isProjectItem && selectedItem?.endsWith('-claude-md')) {
+      const parts = selectedItem.split('-');
+      if (parts.length >= 2) {
+        try {
+          const projectPath = atob(parts[1]);
+          loadClaudeMd(projectPath);
+        } catch (e) {
+          console.error('Failed to decode project path:', e);
+        }
+      }
+    }
+  }, [selectedItem]);
+  
+  // Function to load CLAUDE.md content
+  const loadClaudeMd = async (projectPath: string) => {
+    setClaudeMdLoading(true);
+    try {
+      const encodedPath = btoa(projectPath);
+      const response = await fetch(`/api/project/${encodedPath}/claude-md`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setClaudeMdContent(data.content);
+        setClaudeMdExists(data.exists);
+      } else {
+        console.error('Failed to load CLAUDE.md:', data.error);
+        setClaudeMdContent('');
+        setClaudeMdExists(false);
+      }
+    } catch (error) {
+      console.error('Error loading CLAUDE.md:', error);
+      setClaudeMdContent('');
+      setClaudeMdExists(false);
+    } finally {
+      setClaudeMdLoading(false);
+    }
+  };
+  
+  // Function to save CLAUDE.md content
+  const saveClaudeMd = async (projectPath: string, content: string) => {
+    setClaudeMdSaving(true);
+    try {
+      const encodedPath = btoa(projectPath);
+      const response = await fetch(`/api/project/${encodedPath}/claude-md`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setClaudeMdExists(true);
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.error };
+      }
+    } catch (error) {
+      return { success: false, error: `Network error: ${error}` };
+    } finally {
+      setClaudeMdSaving(false);
+    }
+  };
+  
   if (!selectedEngine || !selectedItem) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -1031,19 +1107,84 @@ export function MainContent({
                     );
                     
                   case 'claude-md':
+                    const handleSaveClaudeMd = async () => {
+                      const result = await saveClaudeMd(projectPath, claudeMdContent);
+                      if (result.success) {
+                        // Could add a toast notification here
+                        console.log('CLAUDE.md saved successfully');
+                      } else {
+                        console.error('Failed to save CLAUDE.md:', result.error);
+                        alert(`Failed to save CLAUDE.md: ${result.error}`);
+                      }
+                    };
+                    
                     return (
                       <div>
-                        <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-4">CLAUDE.md Configuration</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          Manage CLAUDE.md file settings and external includes approval for this project.
-                        </p>
-                        <div className="space-y-4">
-                          {renderBooleanSetting('hasClaudeMdExternalIncludesApproved', 'External Includes Approved', 'Whether external includes in CLAUDE.md have been approved')}
-                          {renderBooleanSetting('hasClaudeMdExternalIncludesWarningShown', 'External Includes Warning Shown', 'Whether the external includes warning has been shown')}
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h4 className="text-md font-semibold text-gray-900 dark:text-white">CLAUDE.md File Editor</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Edit the CLAUDE.md file for this project. This file provides instructions to Claude Code.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 text-xs rounded ${
+                              claudeMdExists 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                            }`}>
+                              {claudeMdExists ? 'File exists' : 'New file'}
+                            </span>
+                            <button
+                              onClick={handleSaveClaudeMd}
+                              disabled={claudeMdSaving}
+                              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            >
+                              {claudeMdSaving ? 'Saving...' : 'Save'}
+                            </button>
+                          </div>
                         </div>
-                        {(!projectData.hasClaudeMdExternalIncludesApproved && !projectData.hasClaudeMdExternalIncludesWarningShown) && (
-                          <div className="text-center py-8">
-                            <p className="text-gray-500 dark:text-gray-400">No CLAUDE.md external includes configured</p>
+                        
+                        {claudeMdLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="text-gray-500 dark:text-gray-400">Loading CLAUDE.md...</div>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <textarea
+                              value={claudeMdContent}
+                              onChange={(e) => setClaudeMdContent(e.target.value)}
+                              className="w-full h-96 px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-y"
+                              placeholder="# CLAUDE.md
+
+This file provides guidance to Claude Code when working with code in this repository.
+
+## Project Description
+Describe what this project does and its main purpose.
+
+## Development Instructions
+- How to set up the development environment
+- Key commands and workflows
+- Important architectural decisions
+
+## Context and Guidelines
+- Coding standards and conventions
+- Important files and their purposes
+- Any specific instructions for AI assistance"
+                            />
+                            
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              File path: {projectPath}/CLAUDE.md
+                            </div>
+                            
+                            {/* Project configuration section */}
+                            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-6">
+                              <h5 className="font-medium text-gray-900 dark:text-white mb-3">Project Configuration</h5>
+                              <div className="space-y-4">
+                                {renderBooleanSetting('hasClaudeMdExternalIncludesApproved', 'External Includes Approved', 'Whether external includes in CLAUDE.md have been approved')}
+                                {renderBooleanSetting('hasClaudeMdExternalIncludesWarningShown', 'External Includes Warning Shown', 'Whether the external includes warning has been shown')}
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1058,34 +1199,106 @@ export function MainContent({
                         </p>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {/* Session Information */}
+                          {/* Project Statistics */}
                           <div className="space-y-4">
-                            <h5 className="font-medium text-gray-900 dark:text-white">Latest Session</h5>
-                            {renderStringSetting('lastSessionId', 'Session ID', 'Unique identifier for the last session')}
-                            {renderNumberSetting('lastCost', 'Session Cost', 'Cost of the last session in USD', false)}
-                            {renderNumberSetting('lastAPIDuration', 'API Duration', 'API duration in milliseconds', false)}
-                            {renderNumberSetting('lastDuration', 'Total Duration', 'Total session duration in milliseconds', false)}
+                            <h5 className="font-medium text-gray-900 dark:text-white">Project Statistics</h5>
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                <div>
+                                  <div className="font-medium text-gray-900 dark:text-white">Conversation History</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">Number of recorded conversations</div>
+                                </div>
+                                <div className="text-gray-900 dark:text-white">
+                                  {projectData.history ? projectData.history.length : 0}
+                                </div>
+                              </div>
+                              
+                              <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                <div>
+                                  <div className="font-medium text-gray-900 dark:text-white">Project Onboarding Count</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">Times project onboarding was seen</div>
+                                </div>
+                                <div className="text-gray-900 dark:text-white">
+                                  {projectData.projectOnboardingSeenCount || 0}
+                                </div>
+                              </div>
+                              
+                              {projectData.exampleFiles && (
+                                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                  <div>
+                                    <div className="font-medium text-gray-900 dark:text-white">Example Files</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">Generated example files count</div>
+                                  </div>
+                                  <div className="text-gray-900 dark:text-white">
+                                    {projectData.exampleFiles.length}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {projectData.exampleFilesGeneratedAt && (
+                                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                  <div>
+                                    <div className="font-medium text-gray-900 dark:text-white">Examples Generated</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">When example files were generated</div>
+                                  </div>
+                                  <div className="text-gray-900 dark:text-white text-sm">
+                                    {new Date(projectData.exampleFilesGeneratedAt).toLocaleString()}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           
-                          {/* Code Changes */}
+                          {/* Global Performance Data */}
                           <div className="space-y-4">
-                            <h5 className="font-medium text-gray-900 dark:text-white">Code Changes</h5>
-                            {renderNumberSetting('lastLinesAdded', 'Lines Added', 'Lines added in the last session', false)}
-                            {renderNumberSetting('lastLinesRemoved', 'Lines Removed', 'Lines removed in the last session', false)}
-                          </div>
-                          
-                          {/* Token Usage */}
-                          <div className="space-y-4">
-                            <h5 className="font-medium text-gray-900 dark:text-white">Token Usage</h5>
-                            {renderNumberSetting('lastTotalInputTokens', 'Input Tokens', 'Total input tokens used', false)}
-                            {renderNumberSetting('lastTotalOutputTokens', 'Output Tokens', 'Total output tokens generated', false)}
-                          </div>
-                          
-                          {/* Cache Performance */}
-                          <div className="space-y-4">
-                            <h5 className="font-medium text-gray-900 dark:text-white">Cache Performance</h5>
-                            {renderNumberSetting('lastTotalCacheCreationInputTokens', 'Cache Creation', 'Cache creation input tokens', false)}
-                            {renderNumberSetting('lastTotalCacheReadInputTokens', 'Cache Reads', 'Cache read input tokens', false)}
+                            <h5 className="font-medium text-gray-900 dark:text-white">Global Statistics</h5>
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                <div>
+                                  <div className="font-medium text-gray-900 dark:text-white">Total Startups</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">Claude Code startup count</div>
+                                </div>
+                                <div className="text-gray-900 dark:text-white">
+                                  {selectedEngineData.numStartups || 0}
+                                </div>
+                              </div>
+                              
+                              {selectedEngineData.firstStartTime && (
+                                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                  <div>
+                                    <div className="font-medium text-gray-900 dark:text-white">First Start Time</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">When Claude Code was first started</div>
+                                  </div>
+                                  <div className="text-gray-900 dark:text-white text-sm">
+                                    {new Date(selectedEngineData.firstStartTime).toLocaleString()}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {selectedEngineData.promptQueueUseCount && (
+                                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                  <div>
+                                    <div className="font-medium text-gray-900 dark:text-white">Prompt Queue Usage</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">Times prompt queue was used</div>
+                                  </div>
+                                  <div className="text-gray-900 dark:text-white">
+                                    {selectedEngineData.promptQueueUseCount}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {selectedEngineData.oauthAccount && (
+                                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                  <div>
+                                    <div className="font-medium text-gray-900 dark:text-white">Account</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">Logged in account</div>
+                                  </div>
+                                  <div className="text-gray-900 dark:text-white text-sm">
+                                    {selectedEngineData.oauthAccount.emailAddress}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
