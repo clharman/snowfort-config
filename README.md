@@ -1,6 +1,6 @@
 # Snowfort Config
 
-A lightweight, cross-platform utility for reading, displaying, and safely editing local configuration files for generative AI CLIs like Claude Code CLI and OpenAI Codex.
+A lightweight, cross-platform utility for reading, displaying, and safely editing local configuration files for generative AI CLIs including **Claude Code CLI** and **OpenAI Codex**.
 
 ## Features
 
@@ -18,8 +18,8 @@ A lightweight, cross-platform utility for reading, displaying, and safely editin
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/snowfort-config.git
-cd snowfort-config
+git clone https://github.com/snowfort-ai/config.git
+cd config
 
 # Install dependencies
 pnpm install
@@ -128,7 +128,6 @@ Current adapters: `ClaudeAdapter` (`~/.claude.json`), `CodexAdapter` (`~/.codex/
 
 #### Claude Code CLI
 - **Primary**: `~/.claude.json` - Main configuration with projects and MCP servers
-- **Global Settings**: `~/.claude/settings.json` - New format global settings
 - **Project Settings**: `<project>/.claude/settings.json` - Shared project settings
 - **Local Settings**: `<project>/.claude/settings.local.json` - Local-only settings
 - **MCP Configuration**: `<project>/.mcp.json` - Project MCP server definitions
@@ -147,14 +146,6 @@ Current adapters: `ClaudeAdapter` (`~/.claude.json`), `CodexAdapter` (`~/.codex/
 ## License
 
 MIT License - see LICENSE file for details.
-
-## Roadmap
-
-- [ ] Project-level configuration file support
-- [ ] Configuration export/import
-- [ ] Enhanced MCP server management
-- [ ] Configuration validation and templates
-- [ ] Team collaboration features
 
 ---
 
