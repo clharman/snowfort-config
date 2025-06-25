@@ -9,6 +9,7 @@ interface MainContentProps {
   onArrayUpdate: (engineId: string, key: string, value: string[]) => void;
   onStringUpdate: (engineId: string, key: string, value: string) => void;
   onProjectUpdate: (engineId: string, projectPath: string, updates: any) => void;
+  onObjectUpdate: (engineId: string, updates: any) => Promise<any>;
 }
 
 export function MainContent({
@@ -18,7 +19,8 @@ export function MainContent({
   onToggle,
   onArrayUpdate: _onArrayUpdate,
   onStringUpdate: _onStringUpdate,
-  onProjectUpdate: _onProjectUpdate
+  onProjectUpdate: _onProjectUpdate,
+  onObjectUpdate: _onObjectUpdate
 }: MainContentProps) {
   // State for editing fields - moved to top level to avoid hooks violations
   const [editingFields, setEditingFields] = useState<Record<string, boolean>>({});
@@ -1382,6 +1384,107 @@ Enter your system prompt instructions here. This content will be applied to ever
         );
 
       case 'mcp-servers':
+        const handleGeminiMcpServerEdit = (serverName: string) => {
+          const serverConfig = selectedEngineData.mcpServers[serverName];
+          setEditingMcpServer(serverName);
+          setEditingValues(prev => ({
+            ...prev,
+            [`mcpServer_${serverName}_command`]: serverConfig.command || '',
+            [`mcpServer_${serverName}_args`]: serverConfig.args ? serverConfig.args.join(' ') : '',
+            [`mcpServer_${serverName}_env`]: serverConfig.env ? Object.entries(serverConfig.env).map(([k, v]) => `${k}=${v}`).join('\n') : ''
+          }));
+        };
+        
+        const handleGeminiMcpServerSave = async (serverName: string) => {
+          const command = editingValues[`mcpServer_${serverName}_command`] || '';
+          const argsStr = editingValues[`mcpServer_${serverName}_args`] || '';
+          const envStr = editingValues[`mcpServer_${serverName}_env`] || '';
+          
+          const args = argsStr.trim() ? argsStr.split(' ').filter(arg => arg.trim()) : [];
+          const env: Record<string, string> = {};
+          if (envStr.trim()) {
+            envStr.split('\n').forEach(line => {
+              const [key, ...valueParts] = line.split('=');
+              if (key && key.trim() && valueParts.length > 0) {
+                env[key.trim()] = valueParts.join('=').trim();
+              }
+            });
+          }
+          
+          const serverConfig: any = { command };
+          if (args.length > 0) serverConfig.args = args;
+          if (Object.keys(env).length > 0) serverConfig.env = env;
+          
+          const result = await _onObjectUpdate(selectedEngine, {
+            mcpServers: {
+              ...selectedEngineData.mcpServers,
+              [serverName]: serverConfig
+            }
+          });
+          
+          if (result.success) {
+            setEditingMcpServer(null);
+          } else {
+            alert('Failed to save MCP server: ' + (result.errors || []).join(', '));
+          }
+        };
+        
+        const handleGeminiMcpServerCancel = () => {
+          setEditingMcpServer(null);
+        };
+        
+        const handleGeminiMcpServerDelete = async (serverName: string) => {
+          if (!confirm(`Are you sure you want to delete MCP server "${serverName}"?`)) {
+            return;
+          }
+          
+          const updatedServers = { ...selectedEngineData.mcpServers };
+          delete updatedServers[serverName];
+          
+          const result = await _onObjectUpdate(selectedEngine, {
+            mcpServers: updatedServers
+          });
+          
+          if (!result.success) {
+            alert('Failed to delete MCP server: ' + (result.errors || []).join(', '));
+          }
+        };
+        
+        const handleGeminiAddMcpServer = async () => {
+          if (!newMcpServer.name.trim() || !newMcpServer.command.trim()) {
+            return;
+          }
+          
+          const args = newMcpServer.args.trim() ? newMcpServer.args.split(' ').filter(arg => arg.trim()) : [];
+          const env: Record<string, string> = {};
+          if (newMcpServer.env.trim()) {
+            newMcpServer.env.split('\n').forEach(line => {
+              const [key, ...valueParts] = line.split('=');
+              if (key && key.trim() && valueParts.length > 0) {
+                env[key.trim()] = valueParts.join('=').trim();
+              }
+            });
+          }
+          
+          const serverConfig: any = { command: newMcpServer.command };
+          if (args.length > 0) serverConfig.args = args;
+          if (Object.keys(env).length > 0) serverConfig.env = env;
+          
+          const result = await _onObjectUpdate(selectedEngine, {
+            mcpServers: {
+              ...(selectedEngineData.mcpServers || {}),
+              [newMcpServer.name]: serverConfig
+            }
+          });
+          
+          if (result.success) {
+            setNewMcpServer({ name: '', command: '', args: '', env: '' });
+            setShowAddMcpForm(false);
+          } else {
+            alert('Failed to add MCP server: ' + (result.errors || []).join(', '));
+          }
+        };
+
         return (
           <div>
             <div className="mb-6">
@@ -1395,33 +1498,191 @@ Enter your system prompt instructions here. This content will be applied to ever
               <div className="space-y-4">
                 {Object.entries(selectedEngineData.mcpServers).map(([serverName, server]: [string, any]) => (
                   <div key={serverName} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h6 className="font-medium text-gray-900 dark:text-white">{serverName}</h6>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div><span className="font-medium">Command:</span> <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{server.command}</code></div>
-                      {server.args && server.args.length > 0 && (
-                        <div><span className="font-medium">Args:</span> <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{server.args.join(' ')}</code></div>
-                      )}
-                      {server.env && Object.keys(server.env).length > 0 && (
+                    {editingMcpServer === serverName ? (
+                      <div className="space-y-4">
                         <div>
-                          <span className="font-medium">Environment:</span>
-                          <div className="mt-1 space-y-1">
-                            {Object.entries(server.env).map(([key, value]: [string, any]) => (
-                              <div key={key} className="text-xs">
-                                <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{key}={value}</code>
-                              </div>
-                            ))}
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Command
+                          </label>
+                          <input
+                            type="text"
+                            value={editingValues[`mcpServer_${serverName}_command`] || ''}
+                            onChange={(e) => setEditingValues(prev => ({ ...prev, [`mcpServer_${serverName}_command`]: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Arguments (space-separated)
+                          </label>
+                          <input
+                            type="text"
+                            value={editingValues[`mcpServer_${serverName}_args`] || ''}
+                            onChange={(e) => setEditingValues(prev => ({ ...prev, [`mcpServer_${serverName}_args`]: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Environment Variables (one per line: KEY=value)
+                          </label>
+                          <textarea
+                            value={editingValues[`mcpServer_${serverName}_env`] || ''}
+                            onChange={(e) => setEditingValues(prev => ({ ...prev, [`mcpServer_${serverName}_env`]: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            rows={3}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => handleGeminiMcpServerSave(serverName)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            Save
+                          </button>
+                          <button 
+                            onClick={handleGeminiMcpServerCancel}
+                            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-3">
+                          <h6 className="font-medium text-gray-900 dark:text-white">{serverName}</h6>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleGeminiMcpServerEdit(serverName)}
+                              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              Edit
+                            </button>
+                            <button 
+                              onClick={() => handleGeminiMcpServerDelete(serverName)}
+                              className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                              Delete
+                            </button>
                           </div>
                         </div>
-                      )}
-                    </div>
+                        <div className="space-y-2 text-sm">
+                          <div><span className="font-medium">Command:</span> <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{server.command}</code></div>
+                          {server.args && server.args.length > 0 && (
+                            <div><span className="font-medium">Args:</span> <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{server.args.join(' ')}</code></div>
+                          )}
+                          {server.env && Object.keys(server.env).length > 0 && (
+                            <div>
+                              <span className="font-medium">Environment:</span>
+                              <div className="mt-1 space-y-1">
+                                {Object.entries(server.env).map(([key, value]: [string, any]) => (
+                                  <div key={key} className="text-xs">
+                                    <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{key}={value}</code>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
+                
+                <div className="mt-4">
+                  <button 
+                    onClick={() => setShowAddMcpForm(!showAddMcpForm)}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    {showAddMcpForm ? 'Cancel' : 'Add MCP Server'}
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">No MCP servers configured</p>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">No MCP servers configured</p>
+                <button 
+                  onClick={() => setShowAddMcpForm(!showAddMcpForm)}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  {showAddMcpForm ? 'Cancel' : 'Add First MCP Server'}
+                </button>
+              </div>
+            )}
+            
+            {/* Add MCP Server Form */}
+            {showAddMcpForm && (
+              <div className="mt-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <h6 className="font-medium text-gray-900 dark:text-white mb-4">Add MCP Server</h6>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Server Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newMcpServer.name}
+                      onChange={(e) => setNewMcpServer(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      placeholder="e.g., playwright, filesystem, git"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Command
+                    </label>
+                    <input
+                      type="text"
+                      value={newMcpServer.command}
+                      onChange={(e) => setNewMcpServer(prev => ({ ...prev, command: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      placeholder="npx"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Arguments (space-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={newMcpServer.args}
+                      onChange={(e) => setNewMcpServer(prev => ({ ...prev, args: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      placeholder="@playwright/mcp@latest --image-responses allow"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Environment Variables (one per line: KEY=value)
+                    </label>
+                    <textarea
+                      value={newMcpServer.env}
+                      onChange={(e) => setNewMcpServer(prev => ({ ...prev, env: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      rows={3}
+                      placeholder="API_KEY=your_key&#10;DEBUG=true"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <button 
+                      onClick={handleGeminiAddMcpServer}
+                      disabled={!newMcpServer.name.trim() || !newMcpServer.command.trim()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      Add Server
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowAddMcpForm(false);
+                        setNewMcpServer({ name: '', command: '', args: '', env: '' });
+                      }}
+                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>

@@ -176,6 +176,32 @@ function App() {
     }
   };
 
+  const handleObjectUpdate = async (engineId: string, updates: any) => {
+    setSaveStatus('saving');
+    
+    const patchObj = {
+      [engineId]: updates
+    };
+    
+    const result = await patch(patchObj);
+    setLastResult(result);
+    
+    if (result.success) {
+      if (result.warnings && result.warnings.length > 0) {
+        setSaveStatus('warning');
+        setTimeout(() => setSaveStatus('idle'), 4000);
+      } else {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      }
+    } else {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 5000);
+    }
+    
+    return result;
+  };
+
 
   if (loading) {
     return (
@@ -243,6 +269,7 @@ function App() {
         onArrayUpdate={handleArrayUpdate}
         onStringUpdate={handleStringUpdate}
         onProjectUpdate={handleProjectUpdate}
+        onObjectUpdate={handleObjectUpdate}
       />
     </div>
   );

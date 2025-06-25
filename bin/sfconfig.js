@@ -12,10 +12,10 @@ const program = new Command();
 
 program
   .name('sfconfig')
-  .description('Snowfort Config - AI CLI configuration manager')
-  .version('0.0.4')
+  .description('Snowfort Config - AI CLI configuration manager (launches web UI by default)')
+  .version('0.0.5')
   .option('--tui', 'Launch terminal UI')
-  .option('--web', 'Launch web UI')
+  .option('--web', 'Launch web UI (default)')
   .option('--port <port>', 'Custom port for web UI (default: 4040)', '4040')
   .option('--config <path>', 'Custom config path')
   .option('--no-update-check', 'Disable update check')
@@ -32,10 +32,11 @@ program
     } else if (options.web) {
       launchWeb(options);
     } else {
-      // Default behavior: show help if no subcommand and no flags
+      // Default behavior: launch web UI if no subcommand and no flags
       const args = command.args;
       if (args.length === 0) {
-        program.help();
+        console.log('Starting web interface (default)...');
+        launchWeb(options);
       }
     }
   });

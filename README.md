@@ -5,11 +5,11 @@ A lightweight, cross-platform utility for reading, displaying, and safely editin
 ## 🚀 Quick Install & Run
 
 ```bash
+# Launch Web UI (default - no installation required)
+npx sfconfig
+
 # Launch Terminal UI (no installation required)
 npx sfconfig --tui
-
-# Launch Web UI (no installation required)  
-npx sfconfig --web
 
 # Or install globally
 npm install -g sfconfig
@@ -43,13 +43,13 @@ npx sfconfig --tui
 <img width="1440" alt="image" src="https://github.com/user-attachments/assets/5b3c8cc7-3fa6-4efd-b4d0-6642eb1070bc" />
 
 ```bash
-# Launch Web UI (default port 4040)
-npx sfconfig --web
-# or: sfconfig --web
+# Launch Web UI (default)
+npx sfconfig
+# or: sfconfig (if installed globally)
 
 # Launch Web UI with custom port
-npx sfconfig --web --port 3000
-# or: sfconfig --web --port 3000
+npx sfconfig --port 3000
+# or: sfconfig --port 3000
 ```
 
 ## 🛠️ Installation Options
@@ -79,24 +79,27 @@ pnpm build
 ## 🎯 All Available Commands
 
 ```bash
-# Show help
-sfconfig --help
+# Default behavior (launches web UI)
+sfconfig                    # Launch web UI on port 4040
 
-# Interface selection (choose one)
+# Interface selection
 sfconfig --tui              # Launch terminal UI
-sfconfig --web              # Launch web UI
+sfconfig --web              # Launch web UI (explicit)
 
-# Web-specific options
-sfconfig --web --port 3000  # Custom port
-sfconfig --web --no-open    # Don't auto-open browser
+# Web UI options
+sfconfig --port 3000        # Custom port
+sfconfig --no-open          # Don't auto-open browser
+sfconfig --no-update-check  # Disable update notifications
 
-# General options (work with both interfaces)
+# Terminal UI options
 sfconfig --tui --config /path/to/config.json    # Custom config path
-sfconfig --web --no-update-check                # Disable update notifications
 
 # Subcommand style (also supported)
 sfconfig tui [options]      # Terminal UI subcommand
 sfconfig web [options]      # Web UI subcommand
+
+# Show help
+sfconfig --help
 ```
 
 ## 🛠️ Development
