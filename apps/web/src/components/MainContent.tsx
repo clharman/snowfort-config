@@ -43,11 +43,41 @@ export function MainContent({
   const [claudeMdExists, setClaudeMdExists] = useState<boolean>(false);
   const [claudeMdSaving, setClaudeMdSaving] = useState<boolean>(false);
   
+  // State for Tool Permissions management
+  const [toolsData, setToolsData] = useState<string[]>([]);
+  const [toolsLoading, setToolsLoading] = useState<boolean>(false);
+  const [newTool, setNewTool] = useState<string>('');
+  const [showAddTool, setShowAddTool] = useState<boolean>(false);
+  
+  // State for Ignore Patterns management
+  const [patternsData, setPatternsData] = useState<string[]>([]);
+  const [patternsLoading, setPatternsLoading] = useState<boolean>(false);
+  const [newPattern, setNewPattern] = useState<string>('');
+  const [showAddPattern, setShowAddPattern] = useState<boolean>(false);
+  
+  // State for Examples management
+  const [examplesData, setExamplesData] = useState<Array<{id: string, title: string, description: string, prompt: string}>>([]);
+  const [examplesLoading, setExamplesLoading] = useState<boolean>(false);
+  const [showAddExample, setShowAddExample] = useState<boolean>(false);
+  const [editingExample, setEditingExample] = useState<string | null>(null);
+  const [newExample, setNewExample] = useState({title: '', description: '', prompt: ''});
+  
+  // State for Codex History management
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState<boolean>(false);
+  const [historyExists, setHistoryExists] = useState<boolean>(false);
+  
+  // State for Codex Sessions management
+  const [sessionsData, setSessionsData] = useState<any[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState<boolean>(false);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [showSessionModal, setShowSessionModal] = useState<boolean>(false);
+  
   // Load CLAUDE.md content when claude-md section is selected
   React.useEffect(() => {
     const isProjectItem = selectedItem?.startsWith('project-');
     if (isProjectItem && selectedItem?.endsWith('-claude-md')) {
-      const parts = selectedItem.split('-');
+      const parts = selectedItem!.split('-');
       if (parts.length >= 2) {
         try {
           const projectPath = atob(parts[1]);
@@ -81,6 +111,247 @@ export function MainContent({
       setClaudeMdExists(false);
     } finally {
       setClaudeMdLoading(false);
+    }
+  };
+  
+  // Load data when sections are selected
+  React.useEffect(() => {
+    const isProjectItem = selectedItem?.startsWith('project-');
+    if (isProjectItem) {
+      const parts = selectedItem!.split('-');
+      if (parts.length >= 2) {
+        try {
+          const projectPath = atob(parts[1]);
+          
+          if (selectedItem?.endsWith('-tools')) {
+            loadTools(projectPath);
+          } else if (selectedItem?.endsWith('-ignore')) {
+            loadPatterns(projectPath);
+          } else if (selectedItem?.endsWith('-examples')) {
+            loadExamples(projectPath);
+          }
+        } catch (e) {
+          console.error('Failed to decode project path:', e);
+        }
+      }
+    } else if (selectedEngine === 'codex') {
+      if (selectedItem === 'history-json') {
+        loadHistory();
+      } else if (selectedItem === 'sessions') {
+        loadSessions();
+      }
+    }
+  }, [selectedItem, selectedEngine]);
+  
+  // Function to load tools
+  const loadTools = async (projectPath: string) => {
+    setToolsLoading(true);
+    try {
+      const encodedPath = btoa(projectPath);
+      const response = await fetch(`/api/project/${encodedPath}/tools`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setToolsData(data.tools);
+      } else {
+        console.error('Failed to load tools:', data.error);
+        setToolsData([]);
+      }
+    } catch (error) {
+      console.error('Error loading tools:', error);
+      setToolsData([]);
+    } finally {
+      setToolsLoading(false);
+    }
+  };
+  
+  // Function to save tools
+  const saveTools = async (projectPath: string, tools: string[]) => {
+    try {
+      const encodedPath = btoa(projectPath);
+      const response = await fetch(`/api/project/${encodedPath}/tools`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tools })
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return { success: false, error: `Network error: ${error}` };
+    }
+  };
+  
+  // Function to load patterns
+  const loadPatterns = async (projectPath: string) => {
+    setPatternsLoading(true);
+    try {
+      const encodedPath = btoa(projectPath);
+      const response = await fetch(`/api/project/${encodedPath}/ignore-patterns`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setPatternsData(data.patterns);
+      } else {
+        console.error('Failed to load patterns:', data.error);
+        setPatternsData([]);
+      }
+    } catch (error) {
+      console.error('Error loading patterns:', error);
+      setPatternsData([]);
+    } finally {
+      setPatternsLoading(false);
+    }
+  };
+  
+  // Function to save patterns
+  const savePatterns = async (projectPath: string, patterns: string[]) => {
+    try {
+      const encodedPath = btoa(projectPath);
+      const response = await fetch(`/api/project/${encodedPath}/ignore-patterns`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patterns })
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return { success: false, error: `Network error: ${error}` };
+    }
+  };
+  
+  // Function to load examples
+  const loadExamples = async (projectPath: string) => {
+    setExamplesLoading(true);
+    try {
+      const encodedPath = btoa(projectPath);
+      const response = await fetch(`/api/project/${encodedPath}/examples`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setExamplesData(data.examples);
+      } else {
+        console.error('Failed to load examples:', data.error);
+        setExamplesData([]);
+      }
+    } catch (error) {
+      console.error('Error loading examples:', error);
+      setExamplesData([]);
+    } finally {
+      setExamplesLoading(false);
+    }
+  };
+  
+  // Function to save examples
+  const saveExamples = async (projectPath: string, examples: any[]) => {
+    try {
+      const encodedPath = btoa(projectPath);
+      const response = await fetch(`/api/project/${encodedPath}/examples`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ examples })
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return { success: false, error: `Network error: ${error}` };
+    }
+  };
+  
+  // Function to load history
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const response = await fetch('/api/codex/history');
+      const data = await response.json();
+      
+      if (data.success) {
+        setHistoryData(data.history);
+        setHistoryExists(data.exists);
+      } else {
+        console.error('Failed to load history:', data.error);
+        setHistoryData([]);
+        setHistoryExists(false);
+      }
+    } catch (error) {
+      console.error('Error loading history:', error);
+      setHistoryData([]);
+      setHistoryExists(false);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+  
+  // Function to clear history
+  const clearHistory = async () => {
+    try {
+      const response = await fetch('/api/codex/history', { method: 'DELETE' });
+      const data = await response.json();
+      
+      if (data.success) {
+        setHistoryData([]);
+        setHistoryExists(false);
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.error };
+      }
+    } catch (error) {
+      return { success: false, error: `Network error: ${error}` };
+    }
+  };
+  
+  // Function to load sessions
+  const loadSessions = async () => {
+    setSessionsLoading(true);
+    try {
+      const response = await fetch('/api/codex/sessions');
+      const data = await response.json();
+      
+      if (data.success) {
+        setSessionsData(data.sessions);
+      } else {
+        console.error('Failed to load sessions:', data.error);
+        setSessionsData([]);
+      }
+    } catch (error) {
+      console.error('Error loading sessions:', error);
+      setSessionsData([]);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+  
+  // Function to load session content
+  const loadSession = async (filename: string) => {
+    try {
+      const response = await fetch(`/api/codex/sessions/${filename}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setSelectedSession(data.session);
+        setShowSessionModal(true);
+      } else {
+        console.error('Failed to load session:', data.error);
+      }
+    } catch (error) {
+      console.error('Error loading session:', error);
+    }
+  };
+  
+  // Function to delete session
+  const deleteSession = async (filename: string) => {
+    try {
+      const response = await fetch(`/api/codex/sessions/${filename}`, { method: 'DELETE' });
+      const data = await response.json();
+      
+      if (data.success) {
+        // Reload sessions list
+        loadSessions();
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.error };
+      }
+    } catch (error) {
+      return { success: false, error: `Network error: ${error}` };
     }
   };
   
@@ -406,6 +677,792 @@ export function MainContent({
                 {renderOAuthAccountField('accountUuid', 'Account UUID', 'Your unique account identifier')}
                 {renderOAuthAccountField('organizationUuid', 'Organization UUID', 'Your organization identifier')}
               </>
+            )}
+          </div>
+        );
+
+      // Codex-specific settings
+      case 'model-provider':
+        return (
+          <div>
+            {renderStringSetting('model', 'Model', 'Choose which OpenAI model Codex should use (e.g. gpt-4o, o4-mini)', true)}
+            {renderStringSetting('provider', 'Active Provider', 'Select the active provider key (must match a key inside providers)', true)}
+            
+            <div className="mt-6">
+              <h5 className="font-medium text-gray-900 dark:text-white mb-3">Provider Definitions</h5>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Configure provider definitions (name, baseURL, envKey) that you can add/edit/remove
+              </p>
+              
+              {selectedEngineData.providers && Object.keys(selectedEngineData.providers).length > 0 ? (
+                <div className="space-y-3">
+                  {Object.entries(selectedEngineData.providers).map(([providerKey, provider]: [string, any]) => (
+                    <div key={providerKey} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h6 className="font-medium text-gray-900 dark:text-white">{providerKey}</h6>
+                        <div className="flex gap-2">
+                          <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Edit
+                          </button>
+                          <button className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div><span className="font-medium">Name:</span> {provider.name || 'Not set'}</div>
+                        <div><span className="font-medium">Base URL:</span> {provider.baseURL || 'Not set'}</div>
+                        <div><span className="font-medium">Environment Key:</span> {provider.envKey || 'Not set'}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">No providers configured</p>
+                  <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Add Provider
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'conversation-storage':
+        return (
+          <div>
+            {renderBooleanSetting('disableResponseStorage', 'Disable Response Storage', 'Toggle whether Codex writes completed responses to disk')}
+            {selectedEngineData.history && (
+              <>
+                {renderNumberSetting('history.maxSize', 'Maximum Messages', 'Maximum messages retained in a session transcript', true)}
+                {renderBooleanSetting('history.saveHistory', 'Save History', 'On/off switch for recording conversation history')}
+              </>
+            )}
+          </div>
+        );
+
+      case 'privacy-redaction':
+        return (
+          <div>
+            {renderBooleanSetting('flexMode', 'Flex Mode', 'Enable automatic model fallback when quota/limits are reached')}
+            {renderStringSetting('reasoningEffort', 'Reasoning Effort', 'Low / Medium / High; controls chain-of-thought depth', true)}
+            
+            <div className="mt-6">
+              <h5 className="font-medium text-gray-900 dark:text-white mb-3">Sensitive Patterns</h5>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                List of strings/regexes to redact before storage
+              </p>
+              
+              {selectedEngineData.history?.sensitivePatterns && selectedEngineData.history.sensitivePatterns.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedEngineData.history.sensitivePatterns.map((pattern: string, index: number) => (
+                    <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded">
+                      <span className="text-sm font-mono text-gray-900 dark:text-white">{pattern}</span>
+                      <button className="text-red-600 hover:text-red-800 text-sm">Remove</button>
+                    </div>
+                  ))}
+                  <button className="mt-3 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Add Pattern
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">No sensitive patterns configured</p>
+                  <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Add Pattern
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'tools-resource-limits':
+        return (
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Configure resource limits for tools like the Shell tool
+            </p>
+            
+            {selectedEngineData.tools?.shell && (
+              <div className="space-y-4">
+                <h5 className="font-medium text-gray-900 dark:text-white">Shell Tool Limits</h5>
+                {renderNumberSetting('tools.shell.maxBytes', 'Maximum Bytes', 'Maximum bytes captured by Shell tool', true)}
+                {renderNumberSetting('tools.shell.maxLines', 'Maximum Lines', 'Maximum lines captured by Shell tool', true)}
+              </div>
+            )}
+            
+            {(!selectedEngineData.tools || !selectedEngineData.tools.shell) && (
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400">No tool limits configured</p>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'updates-diagnostics':
+        return (
+          <div>
+            {renderStringSetting('lastUpdateCheck', 'Last Update Check', 'Timestamp of the most recent update ping')}
+          </div>
+        );
+
+      case 'history-json':
+        const handleClearHistory = async () => {
+          if (!confirm('Are you sure you want to clear all command history? This action cannot be undone.')) {
+            return;
+          }
+          
+          const result = await clearHistory();
+          if (result.success) {
+            alert(result.message);
+          } else {
+            alert(`Failed to clear history: ${result.error}`);
+          }
+        };
+        
+        return (
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Quick-command history stored in history.json file
+            </p>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">History File</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Location: ~/.codex/history.json</div>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={loadHistory}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                    disabled={historyLoading}
+                  >
+                    {historyLoading ? 'Loading...' : 'Refresh'}
+                  </button>
+                  <button 
+                    onClick={handleClearHistory}
+                    className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                    disabled={!historyExists || historyData.length === 0}
+                  >
+                    Clear History
+                  </button>
+                </div>
+              </div>
+              
+              {historyLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-gray-500 dark:text-gray-400">Loading history...</div>
+                </div>
+              ) : historyData.length > 0 ? (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    {historyData.length} command{historyData.length !== 1 ? 's' : ''} in history
+                  </div>
+                  {historyData.map((command: any, index: number) => (
+                    <div key={index} className="p-3 bg-gray-50 dark:bg-gray-800 rounded text-sm">
+                      <div className="font-mono text-gray-900 dark:text-white">{command.command || command}</div>
+                      {command.timestamp && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {new Date(command.timestamp).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <p className="text-gray-500 dark:text-gray-400 mb-2">
+                    {historyExists ? 'No commands in history' : 'No history file found'}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Command history will appear here when available
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'sessions':
+        const handleDeleteSession = async (filename: string) => {
+          if (!confirm(`Are you sure you want to delete session "${filename}"? This action cannot be undone.`)) {
+            return;
+          }
+          
+          const result = await deleteSession(filename);
+          if (result.success) {
+            alert(result.message);
+          } else {
+            alert(`Failed to delete session: ${result.error}`);
+          }
+        };
+        
+        const formatFileSize = (bytes: number) => {
+          if (bytes === 0) return '0 B';
+          const k = 1024;
+          const sizes = ['B', 'KB', 'MB', 'GB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(k));
+          return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        };
+        
+        return (
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Archived transcripts stored in the sessions/ directory
+            </p>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">Sessions Directory</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Location: ~/.codex/sessions/</div>
+                </div>
+                <button 
+                  onClick={loadSessions}
+                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  disabled={sessionsLoading}
+                >
+                  {sessionsLoading ? 'Loading...' : 'Refresh'}
+                </button>
+              </div>
+              
+              {sessionsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-gray-500 dark:text-gray-400">Loading sessions...</div>
+                </div>
+              ) : sessionsData.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    {sessionsData.length} session{sessionsData.length !== 1 ? 's' : ''} found
+                  </div>
+                  {sessionsData.map((session: any) => (
+                    <div key={session.filename} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-white">{session.filename}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {formatFileSize(session.size)} • Modified {new Date(session.modified).toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => loadSession(session.filename)}
+                            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            View
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteSession(session.filename)}
+                            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <p className="text-gray-500 dark:text-gray-400 mb-2">No session archives found</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Session archives will appear here when available
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {/* Session Viewer Modal */}
+            {showSessionModal && selectedSession && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Session Archive</h3>
+                    <button
+                      onClick={() => {
+                        setShowSessionModal(false);
+                        setSelectedSession(null);
+                      }}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="overflow-y-auto max-h-96 bg-gray-50 dark:bg-gray-900 p-4 rounded">
+                    <pre className="text-sm font-mono text-gray-900 dark:text-white whitespace-pre-wrap">
+                      {JSON.stringify(selectedSession, null, 2)}
+                    </pre>
+                  </div>
+                  <div className="flex justify-end mt-4">
+                    <button
+                      onClick={() => {
+                        setShowSessionModal(false);
+                        setSelectedSession(null);
+                      }}
+                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'instructions-md':
+        return (
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              Markdown editor for the persistent system prompt applied to every new session
+            </p>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">Instructions File</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Location: ~/.codex/instructions.md</div>
+                </div>
+                <div className="flex gap-2">
+                  <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Edit
+                  </button>
+                  <button className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
+                    Save
+                  </button>
+                </div>
+              </div>
+              
+              <textarea
+                className="w-full h-96 px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-y"
+                placeholder="# System Instructions
+
+Enter your system prompt instructions here. This content will be applied to every new Codex session.
+
+## Example Instructions:
+- Always write clean, well-documented code
+- Follow best practices for the programming language being used
+- Explain complex logic with comments
+- Suggest improvements when appropriate"
+              />
+              
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                This system prompt will be prepended to every new conversation with Codex
+              </div>
+            </div>
+          </div>
+        );
+
+      // Gemini-specific settings
+      case 'core-settings':
+        return (
+          <div>
+            {renderStringSetting('theme', 'Theme', 'Visual theme for Gemini CLI (Default, GitHub, Dark, Light)', true)}
+            {renderStringSetting('contextFileName', 'Context File Name', 'Name of context file to use (default: GEMINI.md)', true)}
+            {renderStringSetting('preferredEditor', 'Preferred Editor', 'Preferred editor for diffs and editing', true)}
+            {renderBooleanSetting('sandbox', 'Sandbox Mode', 'Enable sandboxing for code execution')}
+            {renderBooleanSetting('autoAccept', 'Auto Accept', 'Automatically accept safe tool calls')}
+          </div>
+        );
+
+      case 'authentication':
+        return (
+          <div>
+            {renderStringSetting('selectedAuthType', 'Authentication Method', 'Authentication method to use (oauth-personal, oauth-workspace, api-key)', false)}
+          </div>
+        );
+
+      case 'oauth-credentials':
+        return (
+          <div>
+            <div className="mb-6">
+              <h5 className="font-medium text-gray-900 dark:text-white mb-3">OAuth Credentials Status</h5>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                OAuth authentication credentials stored in ~/.gemini/oauth_creds.json
+              </p>
+            </div>
+            
+            {selectedEngineData._oauth ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">Credentials Status</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Whether OAuth credentials are configured</div>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedEngineData._oauth.hasCredentials 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                  }`}>
+                    {selectedEngineData._oauth.hasCredentials ? 'Configured' : 'Not Configured'}
+                  </div>
+                </div>
+
+                {selectedEngineData._oauth.hasCredentials && (
+                  <>
+                    <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-white">Token Type</div>
+                      </div>
+                      <div className="text-gray-900 dark:text-white">{selectedEngineData._oauth.tokenType || 'Unknown'}</div>
+                    </div>
+
+                    <div className="py-3 border-b border-gray-200 dark:border-gray-700">
+                      <div className="font-medium text-gray-900 dark:text-white mb-2">Scope</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 break-words">
+                        {selectedEngineData._oauth.scope || 'Not specified'}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-white">Token Expiry</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">When the current token expires</div>
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
+                        {selectedEngineData._oauth.expiryDate 
+                          ? new Date(selectedEngineData._oauth.expiryDate).toLocaleString()
+                          : 'Unknown'
+                        }
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
+                      <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Access Token</div>
+                        <div className={`font-medium ${
+                          selectedEngineData._oauth.hasAccessToken 
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {selectedEngineData._oauth.hasAccessToken ? '✓ Present' : '✗ Missing'}
+                        </div>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Refresh Token</div>
+                        <div className={`font-medium ${
+                          selectedEngineData._oauth.hasRefreshToken 
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {selectedEngineData._oauth.hasRefreshToken ? '✓ Present' : '✗ Missing'}
+                        </div>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">ID Token</div>
+                        <div className={`font-medium ${
+                          selectedEngineData._oauth.hasIdToken 
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {selectedEngineData._oauth.hasIdToken ? '✓ Present' : '✗ Missing'}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400">No OAuth credential information available</p>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'user-info':
+        return (
+          <div>
+            <div className="mb-6">
+              <h5 className="font-medium text-gray-900 dark:text-white mb-3">User Information</h5>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                User identification and account details
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">User ID</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Unique identifier from ~/.gemini/user_id</div>
+                </div>
+                <div className="text-gray-900 dark:text-white font-mono text-sm">
+                  {selectedEngineData._userId || 'Not configured'}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'context-file':
+        return (
+          <div>
+            <div className="mb-6">
+              <h5 className="font-medium text-gray-900 dark:text-white mb-3">Context File (GEMINI.md)</h5>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Global context file that provides instructions and memory to Gemini CLI
+              </p>
+            </div>
+            
+            {selectedEngineData._contextFile ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">File Status</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Whether the context file exists</div>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedEngineData._contextFile.exists 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                  }`}>
+                    {selectedEngineData._contextFile.exists ? 'Exists' : 'Not Created'}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">File Path</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Location of the context file</div>
+                  </div>
+                  <div className="text-gray-900 dark:text-white font-mono text-sm">
+                    {selectedEngineData._contextFile.path}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">File Size</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Size of the context file</div>
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
+                    {selectedEngineData._contextFile.size} bytes
+                  </div>
+                </div>
+
+                {selectedEngineData._contextFile.exists && selectedEngineData._contextFile.content && (
+                  <div className="py-4">
+                    <div className="font-medium text-gray-900 dark:text-white mb-3">File Content</div>
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg max-h-64 overflow-y-auto">
+                      <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                        {selectedEngineData._contextFile.content}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {!selectedEngineData._contextFile.exists && (
+                  <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
+                    <div className="text-blue-800 dark:text-blue-200 text-sm">
+                      <strong>Tip:</strong> Create a GEMINI.md file in ~/.gemini/ to provide persistent instructions and context to Gemini CLI.
+                      This file will be included in every conversation as "memory".
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400">No context file information available</p>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'session-logs':
+        return (
+          <div>
+            <div className="mb-6">
+              <h5 className="font-medium text-gray-900 dark:text-white mb-3">Session Logs</h5>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Conversation logs from ~/.gemini/tmp/ directories
+              </p>
+            </div>
+            
+            {selectedEngineData._sessions && selectedEngineData._sessions.length > 0 ? (
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Found {selectedEngineData._sessions.length} session{selectedEngineData._sessions.length === 1 ? '' : 's'}
+                </div>
+                
+                {selectedEngineData._sessions.map((session: any, index: number) => (
+                  <div key={session.sessionDir} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h6 className="font-medium text-gray-900 dark:text-white">Session {index + 1}</h6>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {session.messageCount} message{session.messageCount === 1 ? '' : 's'}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div><span className="font-medium">Session ID:</span> <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs">{session.sessionDir}</code></div>
+                      
+                      {session.firstMessage && (
+                        <div>
+                          <span className="font-medium">First Message:</span>
+                          <div className="mt-1 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs">
+                            <div className="text-gray-500 dark:text-gray-400 mb-1">
+                              {new Date(session.firstMessage.timestamp).toLocaleString()}
+                            </div>
+                            <div className="text-gray-700 dark:text-gray-300 truncate">
+                              {session.firstMessage.message}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {session.lastMessage && session.lastMessage.messageId !== session.firstMessage?.messageId && (
+                        <div>
+                          <span className="font-medium">Last Message:</span>
+                          <div className="mt-1 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs">
+                            <div className="text-gray-500 dark:text-gray-400 mb-1">
+                              {new Date(session.lastMessage.timestamp).toLocaleString()}
+                            </div>
+                            <div className="text-gray-700 dark:text-gray-300 truncate">
+                              {session.lastMessage.message}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 mb-4">No session logs found</p>
+                <div className="text-sm text-gray-400 dark:text-gray-500">
+                  Session logs are created when you use Gemini CLI and are stored in ~/.gemini/tmp/
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'tools-configuration':
+        return (
+          <div>
+            {renderStringSetting('toolDiscoveryCommand', 'Tool Discovery Command', 'Custom command for discovering available tools', true)}
+            {renderStringSetting('toolCallCommand', 'Tool Call Command', 'Custom command for calling tools', true)}
+            
+            {selectedEngineData.coreTools && (
+              <div className="mt-6">
+                <h5 className="font-medium text-gray-900 dark:text-white mb-3">Core Tools</h5>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  List of allowed core tools
+                </p>
+                <div className="space-y-2">
+                  {selectedEngineData.coreTools.map((tool: string, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span className="text-sm font-mono text-gray-900 dark:text-white">{tool}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedEngineData.excludeTools && (
+              <div className="mt-6">
+                <h5 className="font-medium text-gray-900 dark:text-white mb-3">Excluded Tools</h5>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  List of tools to exclude from usage
+                </p>
+                <div className="space-y-2">
+                  {selectedEngineData.excludeTools.map((tool: string, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <span className="text-sm font-mono text-gray-900 dark:text-white">{tool}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'mcp-servers':
+        return (
+          <div>
+            <div className="mb-6">
+              <h5 className="font-medium text-gray-900 dark:text-white mb-3">MCP Servers</h5>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Configure Model-Context Protocol servers for enhanced functionality
+              </p>
+            </div>
+            
+            {selectedEngineData.mcpServers && Object.keys(selectedEngineData.mcpServers).length > 0 ? (
+              <div className="space-y-4">
+                {Object.entries(selectedEngineData.mcpServers).map(([serverName, server]: [string, any]) => (
+                  <div key={serverName} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h6 className="font-medium text-gray-900 dark:text-white">{serverName}</h6>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div><span className="font-medium">Command:</span> <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{server.command}</code></div>
+                      {server.args && server.args.length > 0 && (
+                        <div><span className="font-medium">Args:</span> <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{server.args.join(' ')}</code></div>
+                      )}
+                      {server.env && Object.keys(server.env).length > 0 && (
+                        <div>
+                          <span className="font-medium">Environment:</span>
+                          <div className="mt-1 space-y-1">
+                            {Object.entries(server.env).map(([key, value]: [string, any]) => (
+                              <div key={key} className="text-xs">
+                                <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{key}={value}</code>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400">No MCP servers configured</p>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'advanced-settings':
+        return (
+          <div>
+            {renderStringSetting('apiEndpoint', 'API Endpoint', 'Custom API endpoint URL', true)}
+            {renderStringSetting('model', 'Default Model', 'Default model to use for conversations', true)}
+            {renderNumberSetting('maxTokens', 'Max Tokens', 'Maximum tokens per request', true)}
+            {renderNumberSetting('temperature', 'Temperature', 'Temperature setting for model responses', true)}
+            {renderBooleanSetting('verbose', 'Verbose Logging', 'Enable verbose logging output')}
+            {renderBooleanSetting('debug', 'Debug Mode', 'Enable debug mode')}
+
+            {selectedEngineData.telemetry && (
+              <div className="mt-6">
+                <h5 className="font-medium text-gray-900 dark:text-white mb-3">Telemetry Settings</h5>
+                <div className="space-y-4">
+                  {renderBooleanSetting('telemetry.enabled', 'Telemetry Enabled', 'Enable telemetry data collection')}
+                  {renderStringSetting('telemetry.target', 'Telemetry Target', 'Target for telemetry data (local, remote, none)', true)}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'session-management':
+        return (
+          <div>
+            {renderBooleanSetting('checkpointing', 'Checkpointing', 'Enable conversation state saving and restoration')}
+            
+            {selectedEngineData.conversationHistory && (
+              <div className="mt-6">
+                <h5 className="font-medium text-gray-900 dark:text-white mb-3">Conversation History</h5>
+                <div className="space-y-4">
+                  {renderNumberSetting('conversationHistory.maxEntries', 'Max Entries', 'Maximum number of conversation entries to retain', true)}
+                  {renderBooleanSetting('conversationHistory.saveToFile', 'Save to File', 'Save conversation history to file')}
+                  {renderStringSetting('conversationHistory.filePath', 'File Path', 'Path to conversation history file', true)}
+                </div>
+              </div>
             )}
           </div>
         );
@@ -996,51 +2053,309 @@ export function MainContent({
                             </div>
                           </div>
                         )}
+                        
+                        {/* MCP Context & Additional Settings */}
+                        <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+                          <h5 className="font-medium text-gray-900 dark:text-white mb-4">MCP Context & Status</h5>
+                          <div className="space-y-6">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Context URIs</label>
+                              {projectData.mcpContextUris && projectData.mcpContextUris.length > 0 ? (
+                                <div className="space-y-1">
+                                  {projectData.mcpContextUris.map((uri: string, index: number) => (
+                                    <div key={index} className="text-sm font-mono bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                                      {uri}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-500 dark:text-gray-400">No MCP context URIs configured</p>
+                              )}
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Enabled MCP JSON Servers</label>
+                                {projectData.enabledMcpjsonServers && projectData.enabledMcpjsonServers.length > 0 ? (
+                                  <div className="space-y-1">
+                                    {projectData.enabledMcpjsonServers.map((server: string, index: number) => (
+                                      <div key={index} className="text-sm bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 p-2 rounded">
+                                        {server}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">No enabled MCP JSON servers</p>
+                                )}
+                              </div>
+                              
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Disabled MCP JSON Servers</label>
+                                {projectData.disabledMcpjsonServers && projectData.disabledMcpjsonServers.length > 0 ? (
+                                  <div className="space-y-1">
+                                    {projectData.disabledMcpjsonServers.map((server: string, index: number) => (
+                                      <div key={index} className="text-sm bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-2 rounded">
+                                        {server}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">No disabled MCP JSON servers</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     );
                     
                   case 'tools':
+                    const handleAddTool = async () => {
+                      if (!newTool.trim()) return;
+                      
+                      const updatedTools = [...toolsData, newTool.trim()];
+                      const result = await saveTools(projectPath, updatedTools);
+                      
+                      if (result.success) {
+                        setToolsData(updatedTools);
+                        setNewTool('');
+                        setShowAddTool(false);
+                      } else {
+                        console.error('Failed to add tool:', result.error);
+                        alert(`Failed to add tool: ${result.error || 'Unknown error'}`);
+                      }
+                    };
+                    
+                    const handleRemoveTool = async (toolToRemove: string) => {
+                      const updatedTools = toolsData.filter(tool => tool !== toolToRemove);
+                      const result = await saveTools(projectPath, updatedTools);
+                      
+                      if (result.success) {
+                        setToolsData(updatedTools);
+                      } else {
+                        console.error('Failed to remove tool:', result.error);
+                        alert(`Failed to remove tool: ${result.error || 'Unknown error'}`);
+                      }
+                    };
+                    
                     return (
                       <div>
-                        <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-4">Tool Permissions</h4>
-                        {projectData.allowedTools ? (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Allowed Tools
-                            </label>
-                            <div className="space-y-2">
-                              {projectData.allowedTools.map((tool: string, index: number) => (
-                                <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded">
-                                  <span className="text-sm font-mono text-gray-900 dark:text-white">{tool}</span>
-                                  <button className="text-red-600 hover:text-red-800 text-sm">Remove</button>
-                                </div>
-                              ))}
-                            </div>
-                            <button className="mt-3 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
-                              Add Tool
-                            </button>
+                        {toolsLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="text-gray-500 dark:text-gray-400">Loading tools...</div>
                           </div>
                         ) : (
-                          <div className="text-center py-8">
-                            <p className="text-gray-500 dark:text-gray-400">All tools allowed by default</p>
+                          <div>
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Allowed Tools
+                                </label>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                  Specify which tools Claude Code can use in this project. Empty list means all tools are allowed.
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => setShowAddTool(true)}
+                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                              >
+                                Add Tool
+                              </button>
+                            </div>
+                            
+                            {toolsData.length > 0 ? (
+                              <div className="space-y-2">
+                                {toolsData.map((tool: string, index: number) => (
+                                  <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded">
+                                    <span className="text-sm font-mono text-gray-900 dark:text-white">{tool}</span>
+                                    <button 
+                                      onClick={() => handleRemoveTool(tool)}
+                                      className="text-red-600 hover:text-red-800 text-sm"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-8">
+                                <p className="text-gray-500 dark:text-gray-400 mb-2">No tool restrictions configured</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">All tools are allowed by default</p>
+                              </div>
+                            )}
+                            
+                            {showAddTool && (
+                              <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <h5 className="font-medium text-gray-900 dark:text-white mb-3">Add New Tool</h5>
+                                <div className="space-y-3">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                      Tool Name
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={newTool}
+                                      onChange={(e) => setNewTool(e.target.value)}
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                      placeholder="e.g., bash, edit, read"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleAddTool();
+                                        if (e.key === 'Escape') setShowAddTool(false);
+                                      }}
+                                      autoFocus
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button 
+                                      onClick={handleAddTool}
+                                      disabled={!newTool.trim()}
+                                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    >
+                                      Add Tool
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        setShowAddTool(false);
+                                        setNewTool('');
+                                      }}
+                                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
                     );
                     
                   case 'ignore':
+                    const handleAddPattern = async () => {
+                      if (!newPattern.trim()) return;
+                      
+                      const updatedPatterns = [...patternsData, newPattern.trim()];
+                      const result = await savePatterns(projectPath, updatedPatterns);
+                      
+                      if (result.success) {
+                        setPatternsData(updatedPatterns);
+                        setNewPattern('');
+                        setShowAddPattern(false);
+                      } else {
+                        console.error('Failed to add pattern:', result.error);
+                        alert(`Failed to add pattern: ${result.error || 'Unknown error'}`);
+                      }
+                    };
+                    
+                    const handleRemovePattern = async (patternToRemove: string) => {
+                      const updatedPatterns = patternsData.filter(pattern => pattern !== patternToRemove);
+                      const result = await savePatterns(projectPath, updatedPatterns);
+                      
+                      if (result.success) {
+                        setPatternsData(updatedPatterns);
+                      } else {
+                        console.error('Failed to remove pattern:', result.error);
+                        alert(`Failed to remove pattern: ${result.error || 'Unknown error'}`);
+                      }
+                    };
+                    
                     return (
                       <div>
-                        <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-4">Ignore Patterns</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                           Configure file and directory patterns that Claude Code should ignore when reading your project.
                         </p>
-                        <div className="text-center py-8">
-                          <p className="text-gray-500 dark:text-gray-400 mb-4">No ignore patterns configured</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Ignore patterns are typically managed through .gitignore files and project-specific settings.
-                          </p>
-                        </div>
+                        
+                        {patternsLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="text-gray-500 dark:text-gray-400">Loading patterns...</div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Ignore Patterns
+                                </label>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                  Use glob patterns like *.log, node_modules/, or specific file paths.
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => setShowAddPattern(true)}
+                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                              >
+                                Add Pattern
+                              </button>
+                            </div>
+                            
+                            {patternsData.length > 0 ? (
+                              <div className="space-y-2">
+                                {patternsData.map((pattern: string, index: number) => (
+                                  <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded">
+                                    <span className="text-sm font-mono text-gray-900 dark:text-white">{pattern}</span>
+                                    <button 
+                                      onClick={() => handleRemovePattern(pattern)}
+                                      className="text-red-600 hover:text-red-800 text-sm"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-8">
+                                <p className="text-gray-500 dark:text-gray-400 mb-2">No ignore patterns configured</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  Patterns help control which files Claude Code can access
+                                </p>
+                              </div>
+                            )}
+                            
+                            {showAddPattern && (
+                              <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <h5 className="font-medium text-gray-900 dark:text-white mb-3">Add New Pattern</h5>
+                                <div className="space-y-3">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                      Pattern
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={newPattern}
+                                      onChange={(e) => setNewPattern(e.target.value)}
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                      placeholder="e.g., *.log, node_modules/, .env"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleAddPattern();
+                                        if (e.key === 'Escape') setShowAddPattern(false);
+                                      }}
+                                      autoFocus
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button 
+                                      onClick={handleAddPattern}
+                                      disabled={!newPattern.trim()}
+                                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    >
+                                      Add Pattern
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        setShowAddPattern(false);
+                                        setNewPattern('');
+                                      }}
+                                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                     
@@ -1056,18 +2371,209 @@ export function MainContent({
                     );
                     
                   case 'examples':
+                    const handleAddExample = async () => {
+                      if (!newExample.title.trim() || !newExample.prompt.trim()) return;
+                      
+                      const newId = Date.now().toString();
+                      const exampleToAdd = {
+                        id: newId,
+                        title: newExample.title.trim(),
+                        description: newExample.description.trim(),
+                        prompt: newExample.prompt.trim()
+                      };
+                      
+                      const updatedExamples = [...examplesData, exampleToAdd];
+                      const result = await saveExamples(projectPath, updatedExamples);
+                      
+                      if (result.success) {
+                        setExamplesData(updatedExamples);
+                        setNewExample({title: '', description: '', prompt: ''});
+                        setShowAddExample(false);
+                      } else {
+                        console.error('Failed to add example:', result.error);
+                        alert(`Failed to add example: ${result.error || 'Unknown error'}`);
+                      }
+                    };
+                    
+                    const handleEditExample = async (exampleId: string) => {
+                      const example = examplesData.find(e => e.id === exampleId);
+                      if (!example) return;
+                      
+                      setNewExample({
+                        title: example.title,
+                        description: example.description,
+                        prompt: example.prompt
+                      });
+                      setEditingExample(exampleId);
+                    };
+                    
+                    const handleSaveExample = async () => {
+                      if (!editingExample || !newExample.title.trim() || !newExample.prompt.trim()) return;
+                      
+                      const updatedExamples = examplesData.map(example => 
+                        example.id === editingExample 
+                          ? {
+                              ...example,
+                              title: newExample.title.trim(),
+                              description: newExample.description.trim(),
+                              prompt: newExample.prompt.trim()
+                            }
+                          : example
+                      );
+                      
+                      const result = await saveExamples(projectPath, updatedExamples);
+                      
+                      if (result.success) {
+                        setExamplesData(updatedExamples);
+                        setNewExample({title: '', description: '', prompt: ''});
+                        setEditingExample(null);
+                      } else {
+                        console.error('Failed to save example:', result.error);
+                        alert(`Failed to save example: ${result.error || 'Unknown error'}`);
+                      }
+                    };
+                    
+                    const handleRemoveExample = async (exampleId: string) => {
+                      const updatedExamples = examplesData.filter(example => example.id !== exampleId);
+                      const result = await saveExamples(projectPath, updatedExamples);
+                      
+                      if (result.success) {
+                        setExamplesData(updatedExamples);
+                      } else {
+                        console.error('Failed to remove example:', result.error);
+                        alert(`Failed to remove example: ${result.error || 'Unknown error'}`);
+                      }
+                    };
+                    
                     return (
                       <div>
-                        <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-4">Examples</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                           Manage example prompts and workflows for this project.
                         </p>
-                        <div className="text-center py-8">
-                          <p className="text-gray-500 dark:text-gray-400 mb-4">No examples configured</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Examples help provide context and guidance for Claude Code when working with your project.
-                          </p>
-                        </div>
+                        
+                        {examplesLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="text-gray-500 dark:text-gray-400">Loading examples...</div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="flex items-center justify-between mb-4">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Examples
+                              </label>
+                              <button
+                                onClick={() => setShowAddExample(true)}
+                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                              >
+                                Add Example
+                              </button>
+                            </div>
+                            
+                            {examplesData.length > 0 ? (
+                              <div className="space-y-4">
+                                {examplesData.map((example: any) => (
+                                  <div key={example.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <h5 className="font-medium text-gray-900 dark:text-white">{example.title}</h5>
+                                      <div className="flex gap-2">
+                                        <button 
+                                          onClick={() => handleEditExample(example.id)}
+                                          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                                        >
+                                          Edit
+                                        </button>
+                                        <button 
+                                          onClick={() => handleRemoveExample(example.id)}
+                                          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                                        >
+                                          Remove
+                                        </button>
+                                      </div>
+                                    </div>
+                                    {example.description && (
+                                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{example.description}</p>
+                                    )}
+                                    <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm font-mono">
+                                      {example.prompt}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-8">
+                                <p className="text-gray-500 dark:text-gray-400 mb-2">No examples configured</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  Examples help provide context and guidance for Claude Code
+                                </p>
+                              </div>
+                            )}
+                            
+                            {(showAddExample || editingExample) && (
+                              <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <h5 className="font-medium text-gray-900 dark:text-white mb-3">
+                                  {editingExample ? 'Edit Example' : 'Add New Example'}
+                                </h5>
+                                <div className="space-y-3">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                      Title *
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={newExample.title}
+                                      onChange={(e) => setNewExample(prev => ({...prev, title: e.target.value}))}
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                      placeholder="e.g., Create React Component"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                      Description
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={newExample.description}
+                                      onChange={(e) => setNewExample(prev => ({...prev, description: e.target.value}))}
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                      placeholder="Optional description of what this example does"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                      Prompt *
+                                    </label>
+                                    <textarea
+                                      value={newExample.prompt}
+                                      onChange={(e) => setNewExample(prev => ({...prev, prompt: e.target.value}))}
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                      rows={4}
+                                      placeholder="Create a React functional component that..."
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button 
+                                      onClick={editingExample ? handleSaveExample : handleAddExample}
+                                      disabled={!newExample.title.trim() || !newExample.prompt.trim()}
+                                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    >
+                                      {editingExample ? 'Save Changes' : 'Add Example'}
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        setShowAddExample(false);
+                                        setEditingExample(null);
+                                        setNewExample({title: '', description: '', prompt: ''});
+                                      }}
+                                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                     
@@ -1301,59 +2807,6 @@ Describe what this project does and its main purpose.
                             </div>
                           </div>
                         </div>
-                        
-                        {/* MCP Context URIs */}
-                        <div className="mt-8">
-                          <h5 className="font-medium text-gray-900 dark:text-white mb-4">MCP Context & Servers</h5>
-                          <div className="space-y-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Context URIs</label>
-                              {projectData.mcpContextUris && projectData.mcpContextUris.length > 0 ? (
-                                <div className="space-y-1">
-                                  {projectData.mcpContextUris.map((uri: string, index: number) => (
-                                    <div key={index} className="text-sm font-mono bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                                      {uri}
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <p className="text-sm text-gray-500 dark:text-gray-400">No MCP context URIs configured</p>
-                              )}
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Enabled MCP JSON Servers</label>
-                                {projectData.enabledMcpjsonServers && projectData.enabledMcpjsonServers.length > 0 ? (
-                                  <div className="space-y-1">
-                                    {projectData.enabledMcpjsonServers.map((server: string, index: number) => (
-                                      <div key={index} className="text-sm bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 p-2 rounded">
-                                        {server}
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">No enabled MCP JSON servers</p>
-                                )}
-                              </div>
-                              
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Disabled MCP JSON Servers</label>
-                                {projectData.disabledMcpjsonServers && projectData.disabledMcpjsonServers.length > 0 ? (
-                                  <div className="space-y-1">
-                                    {projectData.disabledMcpjsonServers.map((server: string, index: number) => (
-                                      <div key={index} className="text-sm bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-2 rounded">
-                                        {server}
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">No disabled MCP JSON servers</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     );
                     
@@ -1395,7 +2848,18 @@ Describe what this project does and its main purpose.
       'updates-diagnostics': 'Updates & Diagnostics',
       'history-json': 'Command History',
       'sessions': 'Session Archives',
-      'instructions-md': 'System Prompt'
+      'instructions-md': 'System Prompt',
+      // Gemini titles
+      'core-settings': 'Core Settings',
+      'authentication': 'Authentication',
+      'oauth-credentials': 'OAuth Credentials',
+      'user-info': 'User & Account',
+      'context-file': 'Context File (GEMINI.md)',
+      'session-logs': 'Session Logs',
+      'tools-configuration': 'Tools Configuration',
+      'mcp-servers': 'MCP Servers',
+      'advanced-settings': 'Advanced Settings',
+      'session-management': 'Session Management'
     };
 
     return titles[selectedItem] || selectedItem;
@@ -1410,7 +2874,9 @@ Describe what this project does and its main purpose.
               {getPageTitle()}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Configure {selectedEngine === 'claude-code' ? 'Claude Code' : 'OpenAI Codex'} settings
+              Configure {selectedEngine === 'claude-code' ? 'Claude Code' : 
+                        selectedEngine === 'codex' ? 'OpenAI Codex' :
+                        selectedEngine === 'gemini' ? 'Gemini CLI' : selectedEngine} settings
             </p>
           </div>
           

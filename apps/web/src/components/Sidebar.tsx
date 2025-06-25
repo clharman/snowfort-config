@@ -31,12 +31,12 @@ export function Sidebar({
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['global']));
 
-  // Filter available engines (Claude Code and Codex)
+  // Filter available engines (Claude Code, Codex, and Gemini)
   const availableEngines = engines.filter(([engineId, engineData]) => {
-    return (engineId === 'claude-code' || engineId === 'codex') && engineData._meta?.detected;
+    return (engineId === 'claude-code' || engineId === 'codex' || engineId === 'gemini') && engineData._meta?.detected;
   });
 
-  const unavailableEngines = ['claude-code', 'codex'].filter(engineId => 
+  const unavailableEngines = ['claude-code', 'codex', 'gemini'].filter(engineId => 
     !engines.find(([id, data]) => id === engineId && data._meta?.detected)
   );
 
@@ -113,6 +113,22 @@ export function Sidebar({
           type: 'section',
           children: [
             { id: 'instructions-md', label: 'instructions.md', type: 'subsection' }
+          ]
+        }
+      ];
+    } else if (selectedEngine === 'gemini') {
+      return [
+        {
+          id: 'global',
+          label: 'Global',
+          type: 'section',
+          children: [
+            { id: 'core-settings', label: 'Core Settings', type: 'subsection' },
+            { id: 'authentication', label: 'Authentication', type: 'subsection' },
+            { id: 'oauth-credentials', label: 'OAuth Credentials', type: 'subsection' },
+            { id: 'user-info', label: 'User & Account', type: 'subsection' },
+            { id: 'context-file', label: 'Context File (GEMINI.md)', type: 'subsection' },
+            { id: 'session-logs', label: 'Session Logs', type: 'subsection' }
           ]
         }
       ];
@@ -226,7 +242,9 @@ export function Sidebar({
             <option value="">Select Engine</option>
             {availableEngines.map(([engineId]) => (
               <option key={engineId} value={engineId}>
-                {engineId === 'claude-code' ? 'Claude Code' : 'OpenAI Codex'}
+                {engineId === 'claude-code' ? 'Claude Code' : 
+                 engineId === 'codex' ? 'OpenAI Codex' : 
+                 engineId === 'gemini' ? 'Gemini CLI' : engineId}
               </option>
             ))}
           </select>
@@ -240,7 +258,9 @@ export function Sidebar({
         {unavailableEngines.length > 0 && (
           <div className="mt-2 text-xs text-gray-400 dark:text-gray-500">
             Available: {unavailableEngines.map(id => 
-              id === 'claude-code' ? 'Claude Code' : 'OpenAI Codex'
+              id === 'claude-code' ? 'Claude Code' : 
+              id === 'codex' ? 'OpenAI Codex' : 
+              id === 'gemini' ? 'Gemini CLI' : id
             ).join(', ')} (not detected)
           </div>
         )}

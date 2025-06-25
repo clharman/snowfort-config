@@ -21,15 +21,12 @@ pnpm --filter @snowfort/config-web run build
 # IMPORTANT: Web development uses build-first workflow
 # NOT hot-reload like typical React apps
 
-# For web development:
-# 1. Build the web app first:
-cd apps/web && pnpm build
-
-# 2. Start the integrated server (serves built frontend + API):
-node dist-server/index.js &
-
-# Alternative: Use the convenience script from project root:
-./start-dev.sh
+# For web development - USE THESE COMMANDS (they avoid timeouts):
+./scripts/start.sh   # Quick start (exits immediately)
+./scripts/status.sh  # Check if server is running
+./scripts/stop.sh    # Stop server
+./scripts/logs.sh    # View server output
+./scripts/restart.sh # Restart server
 
 # Run linting across all packages
 pnpm lint
@@ -46,17 +43,17 @@ pnpm clean
 # Test TUI locally
 node apps/tui/dist/index.js
 
-# Start web development server (recommended)
-./start-dev.sh
+# Start web development server (RECOMMENDED - avoids timeouts)
+./scripts/start.sh
 
-# Alternative: Manual web server startup
-cd apps/web && pnpm build && node dist-server/index.js &
+# Check server status and health
+./scripts/status.sh
 
-# Check server health
-curl http://localhost:4040/api/health
+# View server logs
+./scripts/logs.sh
 
-# Stop development server (if port conflict occurs)
-pkill -f "node.*dist-server" || echo "No servers to kill"
+# Stop development server
+./scripts/stop.sh
 
 # Test CLI binary
 node bin/sfconfig.js --help
@@ -67,21 +64,28 @@ node bin/sfconfig.js web --port 3000
 pnpm test
 ```
 
-### Port Conflict Resolution
+### Server Management
 ```bash
-# If you get "EADDRINUSE" error on port 4040:
+# Start server (builds and starts, exits immediately)
+./scripts/start.sh
 
-# 1. Find what's using the port
-lsof -i :4040
+# Check if server is running and healthy
+./scripts/status.sh
 
-# 2. Kill the specific process
-kill [PID]
+# Stop server cleanly
+./scripts/stop.sh
 
-# 3. Or kill all node servers on that port
-pkill -f "node.*dist-server"
+# Restart server (stop + start)
+./scripts/restart.sh
 
-# 4. Then restart
-./start-dev.sh
+# View server logs (recent)
+./scripts/logs.sh
+
+# Follow live logs
+./scripts/logs.sh -f
+
+# If port conflicts occur, use stop then start
+./scripts/stop.sh && ./scripts/start.sh
 ```
 
 ### API Testing
@@ -113,9 +117,44 @@ This project uses a **build-first development workflow**, NOT the typical React 
 - ❌ Don't run `pnpm dev` (vite only) expecting API to work
 - ❌ Don't add proxy configurations to vite.config.ts
 - ❌ Don't assume hot-reload development workflow
+- ❌ Don't use `./start-dev.sh` (causes timeouts in Claude Code)
 - ❌ Don't assume typical React dev patterns - always examine server code first to understand the intended architecture
 - ✅ Always build first, then run the integrated server
-- ✅ Use `./start-dev.sh` for automated setup
+- ✅ Use `./scripts/start.sh` for automation (exits immediately, no timeouts)
+- ✅ Use `./scripts/status.sh` to verify server started successfully
+
+### Claude Code Operational Best Practices
+
+**CRITICAL for automation:** Always use the `./scripts/` commands to avoid timeouts:
+
+1. **Starting the server:** 
+   ```bash
+   ./scripts/start.sh    # Builds, starts, exits immediately
+   ./scripts/status.sh   # Verify it started (run separately)
+   ```
+
+2. **Checking server status:**
+   ```bash
+   ./scripts/status.sh   # Shows PID, health check, URL
+   ```
+
+3. **Viewing logs:**
+   ```bash
+   ./scripts/logs.sh     # Recent logs
+   ./scripts/logs.sh -f  # Follow live (only for manual debugging)
+   ```
+
+4. **Stopping/restarting:**
+   ```bash
+   ./scripts/stop.sh     # Clean shutdown
+   ./scripts/restart.sh  # Stop + start
+   ```
+
+**Why these scripts matter:**
+- The old `./start-dev.sh` waits 10+ seconds doing health checks, causing Claude Code tool timeouts
+- New scripts start the server and exit immediately, then you check status separately
+- Proper backgrounding with log redirection and PID management
+- Avoids the "server started but command timed out" confusion
 
 ## Architecture Overview
 

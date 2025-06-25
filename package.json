@@ -1,17 +1,37 @@
 {
-  "name": "@snowfort/config",
-  "version": "0.0.1",
+  "name": "sfconfig",
+  "version": "0.0.5",
   "description": "Lightweight utility for managing generative AI CLI configurations",
   "type": "module",
   "engines": {
     "node": ">=18"
   },
   "bin": {
-    "sfconfig": "./bin/sfconfig.js"
+    "sfconfig": "bin/sfconfig.js"
   },
+  "files": [
+    "bin/",
+    "apps/tui/dist/",
+    "apps/tui/packages/",
+    "apps/web/dist/",
+    "apps/web/dist-server/", 
+    "apps/web/packages/",
+    "packages/core/dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/snowfort-ai/config.git"
+  },
+  "bugs": {
+    "url": "https://github.com/snowfort-ai/config/issues"
+  },
+  "homepage": "https://github.com/snowfort-ai/config#readme",
   "scripts": {
     "dev": "pnpm --recursive run dev",
     "build": "pnpm --recursive run build",
+    "prepublishOnly": "pnpm build && node scripts/simple-bundle.js && node scripts/fix-imports.js",
     "start:web": "./start-web.sh",
     "test": "pnpm --recursive run test",
     "lint": "pnpm --recursive run lint",
@@ -38,6 +58,15 @@
   "author": "Snowfort",
   "license": "MIT",
   "dependencies": {
-    "commander": "^11.1.0"
+    "commander": "^11.1.0",
+    "ajv": "^8.12.0",
+    "chokidar": "^3.5.3",
+    "update-notifier": "^7.0.0",
+    "yaml": "^2.3.4",
+    "ink": "^4.4.1",
+    "react": "^18.2.0",
+    "@heroicons/react": "^2.2.0",
+    "express": "^4.18.2",
+    "react-dom": "^18.2.0"
   }
 }

@@ -49,6 +49,7 @@ function App() {
     if (!selectedEngine && engines.length > 0) {
       const claudeCode = engines.find(([id, data]) => id === 'claude-code' && data._meta?.detected);
       const codex = engines.find(([id, data]) => id === 'codex' && data._meta?.detected);
+      const gemini = engines.find(([id, data]) => id === 'gemini' && data._meta?.detected);
       
       if (claudeCode) {
         setSelectedEngine('claude-code');
@@ -56,6 +57,9 @@ function App() {
       } else if (codex) {
         setSelectedEngine('codex');
         setSelectedItem('model-provider'); // Auto-select first subsection
+      } else if (gemini) {
+        setSelectedEngine('gemini');
+        setSelectedItem('core-settings'); // Auto-select first subsection
       }
     }
   }, [engines, selectedEngine]);
@@ -68,6 +72,8 @@ function App() {
         setSelectedItem('updates-version');
       } else if (selectedEngine === 'codex') {
         setSelectedItem('model-provider');
+      } else if (selectedEngine === 'gemini') {
+        setSelectedItem('core-settings');
       }
     } else {
       setSelectedItem(null);

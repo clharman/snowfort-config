@@ -100,4 +100,4 @@ Thumbs.db
 .sfconfig-backups/
 
 # Example data for development
-examples/
+examples/logs/

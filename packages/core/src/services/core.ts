@@ -3,7 +3,7 @@ import chokidar from 'chokidar';
 import updateNotifier from 'update-notifier';
 import { EngineAdapter, CoreServiceAPI, BackupInfo, EngineState, ServiceConfig } from '../types/index.js';
 import { BackupService } from './backup.js';
-import { ClaudeAdapter, ClaudeSettingsAdapter, CodexAdapter } from '../adapters/index.js';
+import { ClaudeAdapter, ClaudeSettingsAdapter, CodexAdapter, GeminiAdapter } from '../adapters/index.js';
 
 export class CoreService extends EventEmitter implements CoreServiceAPI {
   private adapters: Map<string, EngineAdapter> = new Map();
@@ -23,7 +23,8 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
     const adapters = [
       new ClaudeAdapter(),
       new ClaudeSettingsAdapter(),
-      new CodexAdapter()
+      new CodexAdapter(),
+      new GeminiAdapter()
     ];
 
     for (const adapter of adapters) {

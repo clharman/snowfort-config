@@ -16,6 +16,16 @@ A lightweight, cross-platform utility for reading, displaying, and safely editin
 
 ### Installation
 
+#### Via npm/npx (Recommended)
+```bash
+# Install globally
+npm install -g sfconfig
+
+# Or use with npx (no installation required)
+npx sfconfig --help
+```
+
+#### From Source
 ```bash
 # Clone the repository
 git clone https://github.com/snowfort-ai/config.git
@@ -34,29 +44,38 @@ pnpm build
 
 <img width="706" alt="image" src="https://github.com/user-attachments/assets/2cbbbe95-2da8-4b95-b2b1-4ed15a256f53" />
 
+#### Simple Flag-based Commands
 ```bash
-# Launch TUI directly
-node apps/tui/dist/index.js
+# Launch Terminal UI
+npx sfconfig --tui
+# or: sfconfig --tui (if installed globally)
 
-# Or use the CLI
-node bin/sfconfig.js tui
+# Launch Web UI (default port 4040)
+npx sfconfig --web
+# or: sfconfig --web
+
+# Launch Web UI with custom port
+npx sfconfig --web --port 3000
+# or: sfconfig --web --port 3000
+
+# Show help
+npx sfconfig --help
 ```
 
 #### Web Interface
 
 <img width="1440" alt="image" src="https://github.com/user-attachments/assets/5b3c8cc7-3fa6-4efd-b4d0-6642eb1070bc" />
 
+#### Subcommand Style (also supported)
 ```bash
-# Option 1: Use the CLI (recommended for production)
-node bin/sfconfig.js web --port 4040
+# Terminal UI
+npx sfconfig tui
 
-# Option 2: Start development server directly
-./start-dev.sh
+# Web interface with options
+npx sfconfig web --port 4040 --no-open
 
-# Option 3: Manual development setup
-cd apps/web && pnpm build && node dist-server/index.js &
-
-# Open browser to http://localhost:4040
+# With custom config path
+npx sfconfig tui --config /path/to/config.json
 ```
 
 #### Development Server Management
@@ -75,21 +94,34 @@ curl http://localhost:4040/api/health
 pkill -f "node.*dist-server"
 ```
 
-#### CLI Commands
+#### All Available Options
 ```bash
 # Show help
+sfconfig --help
+
+# Interface selection (choose one)
+sfconfig --tui              # Launch terminal UI
+sfconfig --web              # Launch web UI
+
+# Web-specific options
+sfconfig --web --port 3000  # Custom port
+sfconfig --web --no-open    # Don't auto-open browser
+
+# General options (work with both interfaces)
+sfconfig --tui --config /path/to/config.json    # Custom config path
+sfconfig --web --no-update-check                # Disable update notifications
+
+# Subcommand style (legacy support)
+sfconfig tui [options]      # Terminal UI subcommand
+sfconfig web [options]      # Web UI subcommand
+```
+
+#### Development Testing
+```bash
+# Test built CLI locally (from source)
 node bin/sfconfig.js --help
-
-# Test TUI locally
-node apps/tui/dist/index.js
-
-# Test web server locally  
-node apps/web/dist-server/index.js
-
-# Test CLI binary
-node bin/sfconfig.js --help
-node bin/sfconfig.js tui
-node bin/sfconfig.js web --port 3000
+node bin/sfconfig.js --tui
+node bin/sfconfig.js --web --port 3000
 ```
 
 ## Development
@@ -154,7 +186,7 @@ New AI CLI tools are supported through the **EngineAdapter** interface. Each ada
 - `write(data)` - Safe atomic writes with backup
 - `getConfigPath()` - Resolve configuration file location
 
-Current adapters: `ClaudeAdapter` (`~/.claude.json`), `CodexAdapter` (`~/.codex/config.json`)
+Current adapters: `ClaudeAdapter` (`~/.claude.json`), `CodexAdapter` (`~/.codex/config.json`), `GeminiAdapter` (`~/.gemini/config.json`)
 
 ### Configuration Files
 
@@ -166,6 +198,13 @@ Current adapters: `ClaudeAdapter` (`~/.claude.json`), `CodexAdapter` (`~/.codex/
 
 #### OpenAI Codex
 - **Primary**: `~/.codex/config.json` - Main Codex configuration
+
+#### Gemini CLI
+- **Primary**: `~/.gemini/config.json` - Main Gemini configuration
+- **OAuth Credentials**: `~/.gemini/oauth_creds.json` - Authentication tokens
+- **User ID**: `~/.gemini/user_id` - User identification
+- **Context File**: `~/.gemini/GEMINI.md` - Context instructions for conversations
+- **Session Logs**: `~/.gemini/tmp/` - Conversation history and logs
 
 ## Contributing
 
