@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 
 export interface NavigationItem {
   id: string;
@@ -204,9 +205,14 @@ export function Sidebar({
           </a>
           <button
             onClick={onToggleDarkMode}
-            className="p-1.5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+            className="p-3 rounded-full transition-all duration-300 bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600"
+            aria-label="Toggle theme"
           >
-            {darkMode ? '☀️' : '🌙'}
+            {darkMode ? (
+              <SunIcon className="w-5 h-5 text-gray-900 dark:text-white" />
+            ) : (
+              <MoonIcon className="w-5 h-5 text-gray-900 dark:text-white" />
+            )}
           </button>
         </div>
 

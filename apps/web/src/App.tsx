@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCore } from './hooks/useCore';
 import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
@@ -8,16 +8,39 @@ function App() {
   const [selectedEngine, setSelectedEngine] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'warning'>('idle');
   const [lastResult, setLastResult] = useState<{ errors: string[]; warnings: string[] } | null>(null);
 
-  React.useEffect(() => {
-    if (darkMode) {
+  // Initialize theme on mount with localStorage and system preference
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const shouldBeDark = savedTheme ? savedTheme === 'dark' : systemPrefersDark;
+    
+    setDarkMode(shouldBeDark);
+    applyTheme(shouldBeDark);
+    setMounted(true);
+  }, []);
+
+  // Apply theme changes
+  useEffect(() => {
+    if (mounted) {
+      applyTheme(darkMode);
+      localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    }
+  }, [darkMode, mounted]);
+
+  const applyTheme = (isDark: boolean) => {
+    if (isDark) {
       document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
     }
-  }, [darkMode]);
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+  };
 
   const engines = Object.entries(state).filter(([key]) => !key.startsWith('_'));
 
@@ -36,6 +59,20 @@ function App() {
       }
     }
   }, [engines, selectedEngine]);
+
+  // Reset selectedItem when engine changes and auto-select appropriate first item
+  React.useEffect(() => {
+    if (selectedEngine) {
+      // Reset to appropriate first item when engine changes
+      if (selectedEngine === 'claude-code') {
+        setSelectedItem('updates-version');
+      } else if (selectedEngine === 'codex') {
+        setSelectedItem('model-provider');
+      }
+    } else {
+      setSelectedItem(null);
+    }
+  }, [selectedEngine]);
 
   const handleToggle = async (engineId: string, key: string, value: boolean) => {
     setSaveStatus('saving');

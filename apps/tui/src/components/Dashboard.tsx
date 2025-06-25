@@ -27,7 +27,14 @@ export function Dashboard() {
   const [helpMode, setHelpMode] = useState(false);
   const [stringEditMode, setStringEditMode] = useState<{key: string, value: string, type: 'string' | 'number'} | null>(null);
   const [arrayEditMode, setArrayEditMode] = useState<{key: string, value: string[]} | null>(null);
+  const [providerEditMode, setProviderEditMode] = useState<{key: string, providerKey: string, value: any} | null>(null);
   const [mcpJsonMode, setMcpJsonMode] = useState<{serverName: string, config: any} | null>(null);
+  const [codexInstructionsMode, setCodexInstructionsMode] = useState<'none' | 'view'>('none');
+  const [codexInstructionsContent, setCodexInstructionsContent] = useState('');
+  const [codexHistoryMode, setCodexHistoryMode] = useState<'none' | 'view'>('none');
+  const [codexHistoryContent, setCodexHistoryContent] = useState('');
+  const [codexSessionsMode, setCodexSessionsMode] = useState<'none' | 'view'>('none');
+  const [codexSessionsContent, setCodexSessionsContent] = useState('');
   const [scrollOffset, setScrollOffset] = useState(0);
 
   const engines = Object.entries(state).filter(([key]) => !key.startsWith('_'));
@@ -345,7 +352,7 @@ export function Dashboard() {
         // Add action buttons for Codex-specific functionality
         globalSettings.push({ key: '__view_history_json__', label: '📄 View history.json', type: 'action', value: 'view_history', section: 'Logs' });
         globalSettings.push({ key: '__view_sessions__', label: '📁 View sessions/', type: 'action', value: 'view_sessions', section: 'Logs' });
-        globalSettings.push({ key: '__edit_instructions__', label: '📝 Edit instructions.md', type: 'action', value: 'edit_instructions', section: 'System Prompt' });
+        globalSettings.push({ key: '__view_instructions__', label: '📄 View instructions.md', type: 'action', value: 'view_instructions', section: 'System Prompt' });
       }
       
       return globalSettings;
@@ -378,6 +385,57 @@ export function Dashboard() {
         console.error('Failed to load CLAUDE.md:', error);
         setClaudeMdContent('');
         setClaudeMdExists(false);
+      }
+    }
+  };
+
+  // Function to load instructions.md content
+  const loadCodexInstructions = async (projectPath: string) => {
+    try {
+      const instructionsPath = path.join(projectPath, '.codex', 'instructions.md');
+      const content = await fs.readFile(instructionsPath, 'utf8');
+      setCodexInstructionsContent(content);
+    } catch (error) {
+      if ((error as any).code === 'ENOENT') {
+        setCodexInstructionsContent('Instructions file not found.');
+      } else {
+        console.error('Failed to load instructions.md:', error);
+        setCodexInstructionsContent('Error loading instructions file.');
+      }
+    }
+  };
+
+  // Function to load history.json content
+  const loadCodexHistory = async (projectPath: string) => {
+    try {
+      const historyPath = path.join(projectPath, '.codex', 'history.json');
+      const content = await fs.readFile(historyPath, 'utf8');
+      setCodexHistoryContent(content);
+    } catch (error) {
+      if ((error as any).code === 'ENOENT') {
+        setCodexHistoryContent('History file not found.');
+      } else {
+        console.error('Failed to load history.json:', error);
+        setCodexHistoryContent('Error loading history file.');
+      }
+    }
+  };
+
+  // Function to load sessions directory content
+  const loadCodexSessions = async (projectPath: string) => {
+    try {
+      const sessionsPath = path.join(projectPath, '.codex', 'sessions');
+      const files = await fs.readdir(sessionsPath);
+      const sessionsList = files.filter(file => file.endsWith('.json'))
+        .map(file => `- ${file}`)
+        .join('\n');
+      setCodexSessionsContent(sessionsList || 'No session files found.');
+    } catch (error) {
+      if ((error as any).code === 'ENOENT') {
+        setCodexSessionsContent('Sessions directory not found.');
+      } else {
+        console.error('Failed to load sessions directory:', error);
+        setCodexSessionsContent('Error loading sessions directory.');
       }
     }
   };
@@ -512,6 +570,15 @@ export function Dashboard() {
       return;
     }
 
+    // Handle provider edit mode
+    if (providerEditMode) {
+      if (key.escape) {
+        setProviderEditMode(null);
+        return;
+      }
+      return;
+    }
+
     // Handle search mode
     if (searchMode) {
       if (key.escape) {
@@ -618,6 +685,33 @@ export function Dashboard() {
         return;
       }
       
+      return;
+    }
+
+    // Handle Codex Instructions mode
+    if (codexInstructionsMode !== 'none') {
+      if (key.escape) {
+        setCodexInstructionsMode('none');
+        return;
+      }
+      return;
+    }
+
+    // Handle Codex History mode
+    if (codexHistoryMode !== 'none') {
+      if (key.escape) {
+        setCodexHistoryMode('none');
+        return;
+      }
+      return;
+    }
+
+    // Handle Codex Sessions mode
+    if (codexSessionsMode !== 'none') {
+      if (key.escape) {
+        setCodexSessionsMode('none');
+        return;
+      }
       return;
     }
 
@@ -739,6 +833,21 @@ export function Dashboard() {
             config: mcpServers 
           });
         }
+      } else if (setting?.type === 'action' && setting.key === '__view_instructions__') {
+        if (selectedProject) {
+          await loadCodexInstructions(selectedProject);
+          setCodexInstructionsMode('view');
+        }
+      } else if (setting?.type === 'action' && setting.key === '__view_history_json__') {
+        if (selectedProject) {
+          await loadCodexHistory(selectedProject);
+          setCodexHistoryMode('view');
+        }
+      } else if (setting?.type === 'action' && setting.key === '__view_sessions__') {
+        if (selectedProject) {
+          await loadCodexSessions(selectedProject);
+          setCodexSessionsMode('view');
+        }
       } else if (setting?.type === 'mcp-server') {
         setMcpJsonMode({ serverName: setting.serverName, config: setting.value });
       } else if (setting?.type === 'boolean') {
@@ -770,6 +879,13 @@ export function Dashboard() {
         setArrayEditMode({
           key: setting.key,
           value: Array.isArray(setting.value) ? [...setting.value] : []
+        });
+      } else if (setting?.type === 'provider') {
+        // Enter provider edit mode
+        setProviderEditMode({
+          key: setting.key,
+          providerKey: (setting as any).providerKey,
+          value: { ...(setting.value as any) }
         });
       }
       return;
@@ -907,8 +1023,8 @@ export function Dashboard() {
             const isEditing = isSelected && editingMode;
           
           return (
-            <Box key={setting.key} marginBottom={1}>
-              <Box width={40}>
+            <Box key={setting.key} marginBottom={setting.type === 'provider' ? 4 : 1}>
+              <Box width={50}>
                 <Text color={isSelected ? 'blue' : undefined} bold={isSelected}>
                   {isSelected ? '> ' : '  '}{setting.label}:
                 </Text>
@@ -935,29 +1051,39 @@ export function Dashboard() {
                     )}
                   </Box>
                 ) : setting.type === 'provider' ? (
-                  <Box flexDirection="column">
-                    <Text color={isSelected ? 'cyan' : 'dimWhite'}>
-                      Name: {(setting.value as any)?.name || 'N/A'}
-                    </Text>
-                    <Text dimColor>
-                      URL: {(setting.value as any)?.baseURL || 'N/A'}
-                    </Text>
-                    <Text dimColor>
-                      Env: {(setting.value as any)?.envKey || 'N/A'}
-                    </Text>
-                    {isSelected && (
-                      <Text dimColor>Press Enter to edit provider</Text>
-                    )}
-                  </Box>
+                  <Text color={isSelected ? 'cyan' : 'dimWhite'}>
+                    {(() => {
+                      // Calculate available width: terminal width - label width - padding
+                      const terminalWidth = stdout?.columns || 80; // fallback to 80 if undefined
+                      const availableWidth = Math.max(30, terminalWidth - 52); // 50 for label + 2 for padding, min 30 chars
+                      
+                      // Smart truncation with priority: name (full), env (full), url (flexible)
+                      const rawName = ((setting.value as any)?.name || 'N/A').toString();
+                      const rawUrl = ((setting.value as any)?.baseURL || 'N/A').toString();
+                      const rawEnv = ((setting.value as any)?.envKey || 'N/A').toString();
+                      
+                      // Reserve space for name and env, use remaining for URL
+                      const nameMaxLen = Math.min(rawName.length, 20);
+                      const envMaxLen = Math.min(rawEnv.length, 25);
+                      const urlMaxLen = Math.max(25, availableWidth - 5); // minimum 25, but use available space
+                      
+                      const name = rawName.substring(0, nameMaxLen);
+                      const url = rawUrl.length > urlMaxLen ? rawUrl.substring(0, urlMaxLen - 3) + '...' : rawUrl;
+                      const env = rawEnv.substring(0, envMaxLen);
+                      const edit = isSelected ? '\nEnter: edit' : '';
+                      
+                      return `${name}\n${url}\n${env}${edit}`;
+                    })()}
+                  </Text>
                 ) : setting.type === 'action' ? (
                   <Text color={isSelected ? 'green' : 'dimWhite'} bold={isSelected}>
                     {isSelected ? '(Press Enter)' : ''}
                   </Text>
                 ) : setting.type === 'readonly' ? (
-                  <Text dimColor>{String(setting.value)}</Text>
+                  <Text dimColor wrap="truncate">{String(setting.value)}</Text>
                 ) : setting.type === 'string' || setting.type === 'number' ? (
                   <Box>
-                    <Text color={isSelected ? 'blue' : undefined} wrap="wrap">
+                    <Text color={isSelected ? 'blue' : undefined} wrap="truncate">
                       {String(setting.value)}
                     </Text>
                     {isSelected && (
@@ -974,7 +1100,7 @@ export function Dashboard() {
                     )}
                   </Box>
                 ) : (
-                  <Text color={isSelected ? 'blue' : undefined} wrap="wrap">{String(setting.value)}</Text>
+                  <Text color={isSelected ? 'blue' : undefined} wrap="truncate">{String(setting.value)}</Text>
                 )}
               </Box>
             </Box>
@@ -1053,6 +1179,12 @@ export function Dashboard() {
               `MCP JSON VIEW: ${mcpJsonMode.serverName} | Esc: Close`
             ) : claudeMdMode !== 'none' ? (
               `CLAUDE.md: ${claudeMdMode} mode | Esc: Close`
+            ) : codexInstructionsMode !== 'none' ? (
+              `CODEX INSTRUCTIONS: ${codexInstructionsMode} mode | Esc: Close`
+            ) : codexHistoryMode !== 'none' ? (
+              `CODEX HISTORY: ${codexHistoryMode} mode | Esc: Close`
+            ) : codexSessionsMode !== 'none' ? (
+              `CODEX SESSIONS: ${codexSessionsMode} mode | Esc: Close`
             ) : helpMode ? (
               `HELP: Scroll to read | H: Close help`
             ) : isProjectMode ? (
@@ -1249,6 +1381,76 @@ export function Dashboard() {
         </Box>
       )}
 
+      {/* Codex Instructions Viewer */}
+      {codexInstructionsMode === 'view' && (
+        <Box marginTop={1} borderStyle="double" borderColor="cyan" padding={1}>
+          <Box flexDirection="column">
+            <Text bold color="cyan">instructions.md</Text>
+            <Text dimColor>Esc: Close</Text>
+            <Text></Text>
+            
+            <Box borderStyle="single" borderColor="gray" padding={1} height={15}>
+              <Text>
+                {codexInstructionsContent.slice(0, 800)}
+                {codexInstructionsContent.length > 800 ? '\n\n... (truncated)' : ''}
+              </Text>
+            </Box>
+            
+            <Box marginTop={1}>
+              <Text dimColor>
+                File: {selectedProject ? path.join(selectedProject, '.codex', 'instructions.md') : 'N/A'}
+              </Text>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      {/* Codex History Viewer */}
+      {codexHistoryMode === 'view' && (
+        <Box marginTop={1} borderStyle="double" borderColor="cyan" padding={1}>
+          <Box flexDirection="column">
+            <Text bold color="cyan">history.json</Text>
+            <Text dimColor>Esc: Close</Text>
+            <Text></Text>
+            
+            <Box borderStyle="single" borderColor="gray" padding={1} height={15}>
+              <Text>
+                {codexHistoryContent.slice(0, 800)}
+                {codexHistoryContent.length > 800 ? '\n\n... (truncated)' : ''}
+              </Text>
+            </Box>
+            
+            <Box marginTop={1}>
+              <Text dimColor>
+                File: {selectedProject ? path.join(selectedProject, '.codex', 'history.json') : 'N/A'}
+              </Text>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      {/* Codex Sessions Viewer */}
+      {codexSessionsMode === 'view' && (
+        <Box marginTop={1} borderStyle="double" borderColor="cyan" padding={1}>
+          <Box flexDirection="column">
+            <Text bold color="cyan">sessions/ directory</Text>
+            <Text dimColor>Esc: Close</Text>
+            <Text></Text>
+            
+            <Box borderStyle="single" borderColor="gray" padding={1} height={15}>
+              <Text>
+                {codexSessionsContent}
+              </Text>
+            </Box>
+            
+            <Box marginTop={1}>
+              <Text dimColor>
+                Directory: {selectedProject ? path.join(selectedProject, '.codex', 'sessions') : 'N/A'}
+              </Text>
+            </Box>
+          </Box>
+        </Box>
+      )}
 
       {/* Help Modal */}
       {helpMode && (
@@ -1341,6 +1543,24 @@ export function Dashboard() {
             {arrayEditMode.value.length === 0 && (
               <Text dimColor>  (No items - press A to add)</Text>
             )}
+          </Box>
+        </Box>
+      )}
+
+      {/* Provider Edit Modal */}
+      {providerEditMode && (
+        <Box marginTop={1} borderStyle="double" borderColor="magenta" padding={1}>
+          <Box flexDirection="column">
+            <Text bold color="magenta">Edit Provider: {providerEditMode.providerKey}</Text>
+            <Text dimColor>Enter: Save | Esc: Cancel</Text>
+            <Text></Text>
+            
+            <Text>Name: <Text color="yellow">{providerEditMode.value?.name || 'N/A'}</Text></Text>
+            <Text>Base URL: <Text color="yellow">{providerEditMode.value?.baseURL || 'N/A'}</Text></Text>
+            <Text>Environment Key: <Text color="yellow">{providerEditMode.value?.envKey || 'N/A'}</Text></Text>
+            
+            <Text></Text>
+            <Text dimColor>Provider editing functionality coming soon...</Text>
           </Box>
         </Box>
       )}
