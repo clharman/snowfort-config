@@ -14,6 +14,21 @@
   -webkit-text-size-adjust: 100%;
 }
 
+/* Force monospace for CONFIG title - after Tailwind to override */
+.config-title-mono,
+.config-title-mono *,
+h1.config-title-mono,
+a h1.config-title-mono,
+a:link h1.config-title-mono,
+a:visited h1.config-title-mono,
+a:hover h1.config-title-mono,
+a:active h1.config-title-mono {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace !important;
+  font-feature-settings: normal !important;
+  font-weight: 600 !important;
+  font-style: normal !important;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -25,3 +40,4 @@ body {
   width: 100%;
   min-width: 100%;
 }
+
