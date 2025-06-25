@@ -27,6 +27,7 @@ export function Dashboard() {
   const [helpMode, setHelpMode] = useState(false);
   const [stringEditMode, setStringEditMode] = useState<{key: string, value: string, type: 'string' | 'number'} | null>(null);
   const [arrayEditMode, setArrayEditMode] = useState<{key: string, value: string[]} | null>(null);
+  const [mcpJsonMode, setMcpJsonMode] = useState<{serverName: string, config: any} | null>(null);
   const [scrollOffset, setScrollOffset] = useState(0);
 
   const engines = Object.entries(state).filter(([key]) => !key.startsWith('_'));
@@ -118,7 +119,7 @@ export function Dashboard() {
             ...mcpContextSettings,
             ...serverEntries,
             { key: '__add_mcp__', label: '+ Add MCP Server', type: 'action' as const, value: 'add' },
-            { key: '__edit_mcp_json__', label: '📝 Edit Raw MCP JSON', type: 'action' as const, value: 'edit_json' }
+            { key: '__view_mcp_json__', label: '📄 View Raw MCP JSON', type: 'action' as const, value: 'view_json' }
           ];
         case 'tools':
           return [
@@ -209,73 +210,142 @@ export function Dashboard() {
           return [];
       }
     } else {
-      // Global settings - Complete implementation matching web version
+      // Global settings - Implementation for both Claude Code and Codex
       const globalSettings = [];
       
-      // Updates & Version Section
-      if (currentEngineData.autoUpdates !== undefined) {
-        globalSettings.push({ key: 'autoUpdates', label: 'Automatic Updates', type: 'boolean', value: currentEngineData.autoUpdates, section: 'Updates & Version' });
-      }
-      if (currentEngineData.hasCompletedOnboarding !== undefined) {
-        globalSettings.push({ key: 'hasCompletedOnboarding', label: 'Completed Onboarding', type: 'boolean', value: currentEngineData.hasCompletedOnboarding, section: 'Updates & Version' });
-      }
-      if (currentEngineData.installMethod !== undefined) {
-        globalSettings.push({ key: 'installMethod', label: 'Install Method', type: 'readonly', value: currentEngineData.installMethod, section: 'Updates & Version' });
-      }
-      if (currentEngineData.lastOnboardingVersion !== undefined) {
-        globalSettings.push({ key: 'lastOnboardingVersion', label: 'Last Onboarding Version', type: 'readonly', value: currentEngineData.lastOnboardingVersion, section: 'Updates & Version' });
-      }
-      
-      // Permissions & Warnings Section
-      if (currentEngineData.fallbackAvailableWarningThreshold !== undefined) {
-        globalSettings.push({ key: 'fallbackAvailableWarningThreshold', label: 'Fallback Warning Threshold', type: 'number', value: currentEngineData.fallbackAvailableWarningThreshold, section: 'Permissions & Warnings' });
-      }
-      if (currentEngineData.bypassPermissionsModeAccepted !== undefined) {
-        globalSettings.push({ key: 'bypassPermissionsModeAccepted', label: 'Bypass Permissions Mode Accepted', type: 'boolean', value: currentEngineData.bypassPermissionsModeAccepted, section: 'Permissions & Warnings' });
-      }
-      
-      // Keyboard & Terminal Integration Section
-      if (currentEngineData.optionAsMetaKeyInstalled !== undefined) {
-        globalSettings.push({ key: 'optionAsMetaKeyInstalled', label: 'Option as Meta Key', type: 'boolean', value: currentEngineData.optionAsMetaKeyInstalled, section: 'Keyboard & Terminal' });
-      }
-      if (currentEngineData.appleTerminalSetupInProgress !== undefined) {
-        globalSettings.push({ key: 'appleTerminalSetupInProgress', label: 'Terminal Setup In Progress', type: 'readonly', value: currentEngineData.appleTerminalSetupInProgress, section: 'Keyboard & Terminal' });
-      }
-      if (currentEngineData.appleTerminalBackupPath !== undefined) {
-        globalSettings.push({ key: 'appleTerminalBackupPath', label: 'Terminal Backup Path', type: 'readonly', value: currentEngineData.appleTerminalBackupPath, section: 'Keyboard & Terminal' });
-      }
-      
-      // Usage & Tips Section
-      if (currentEngineData.numStartups !== undefined) {
-        globalSettings.push({ key: 'numStartups', label: 'Number of Startups', type: 'number', value: currentEngineData.numStartups, section: 'Usage & Tips' });
-      }
-      if (currentEngineData.promptQueueUseCount !== undefined) {
-        globalSettings.push({ key: 'promptQueueUseCount', label: 'Prompt Queue Use Count', type: 'number', value: currentEngineData.promptQueueUseCount, section: 'Usage & Tips' });
-      }
-      if (currentEngineData.subscriptionNoticeCount !== undefined) {
-        globalSettings.push({ key: 'subscriptionNoticeCount', label: 'Subscription Notice Count', type: 'number', value: currentEngineData.subscriptionNoticeCount, section: 'Usage & Tips' });
-      }
-      if (currentEngineData.hasAvailableSubscription !== undefined) {
-        globalSettings.push({ key: 'hasAvailableSubscription', label: 'Has Available Subscription', type: 'boolean', value: currentEngineData.hasAvailableSubscription, section: 'Usage & Tips' });
-      }
-      
-      // User & Account Section
-      if (currentEngineData.userID !== undefined) {
-        globalSettings.push({ key: 'userID', label: 'User ID', type: 'readonly', value: currentEngineData.userID, section: 'User & Account' });
-      }
-      if (currentEngineData.firstStartTime !== undefined) {
-        globalSettings.push({ key: 'firstStartTime', label: 'First Start Time', type: 'readonly', value: new Date(currentEngineData.firstStartTime).toLocaleString(), section: 'User & Account' });
-      }
-      
-      // OAuth Account Section (when available)
-      if (currentEngineData.oauthAccount) {
-        const oauth = currentEngineData.oauthAccount;
-        if (oauth.emailAddress) globalSettings.push({ key: 'oauthAccount.emailAddress', label: 'Email Address', type: 'readonly', value: oauth.emailAddress, section: 'OAuth Account' });
-        if (oauth.organizationName) globalSettings.push({ key: 'oauthAccount.organizationName', label: 'Organization Name', type: 'readonly', value: oauth.organizationName, section: 'OAuth Account' });
-        if (oauth.organizationRole) globalSettings.push({ key: 'oauthAccount.organizationRole', label: 'Organization Role', type: 'readonly', value: oauth.organizationRole, section: 'OAuth Account' });
-        if (oauth.workspaceRole) globalSettings.push({ key: 'oauthAccount.workspaceRole', label: 'Workspace Role', type: 'readonly', value: oauth.workspaceRole, section: 'OAuth Account' });
-        if (oauth.accountUuid) globalSettings.push({ key: 'oauthAccount.accountUuid', label: 'Account UUID', type: 'readonly', value: oauth.accountUuid, section: 'OAuth Account' });
-        if (oauth.organizationUuid) globalSettings.push({ key: 'oauthAccount.organizationUuid', label: 'Organization UUID', type: 'readonly', value: oauth.organizationUuid, section: 'OAuth Account' });
+      if (selectedEngine === 'claude-code') {
+        // Claude Code specific settings
+        
+        // Updates & Version Section
+        if (currentEngineData.autoUpdates !== undefined) {
+          globalSettings.push({ key: 'autoUpdates', label: 'Automatic Updates', type: 'boolean', value: currentEngineData.autoUpdates, section: 'Updates & Version' });
+        }
+        if (currentEngineData.hasCompletedOnboarding !== undefined) {
+          globalSettings.push({ key: 'hasCompletedOnboarding', label: 'Completed Onboarding', type: 'boolean', value: currentEngineData.hasCompletedOnboarding, section: 'Updates & Version' });
+        }
+        if (currentEngineData.installMethod !== undefined) {
+          globalSettings.push({ key: 'installMethod', label: 'Install Method', type: 'readonly', value: currentEngineData.installMethod, section: 'Updates & Version' });
+        }
+        if (currentEngineData.lastOnboardingVersion !== undefined) {
+          globalSettings.push({ key: 'lastOnboardingVersion', label: 'Last Onboarding Version', type: 'readonly', value: currentEngineData.lastOnboardingVersion, section: 'Updates & Version' });
+        }
+        
+        // Permissions & Warnings Section
+        if (currentEngineData.fallbackAvailableWarningThreshold !== undefined) {
+          globalSettings.push({ key: 'fallbackAvailableWarningThreshold', label: 'Fallback Warning Threshold', type: 'number', value: currentEngineData.fallbackAvailableWarningThreshold, section: 'Permissions & Warnings' });
+        }
+        if (currentEngineData.bypassPermissionsModeAccepted !== undefined) {
+          globalSettings.push({ key: 'bypassPermissionsModeAccepted', label: 'Bypass Permissions Mode Accepted', type: 'boolean', value: currentEngineData.bypassPermissionsModeAccepted, section: 'Permissions & Warnings' });
+        }
+        
+        // Keyboard & Terminal Integration Section
+        if (currentEngineData.optionAsMetaKeyInstalled !== undefined) {
+          globalSettings.push({ key: 'optionAsMetaKeyInstalled', label: 'Option as Meta Key', type: 'boolean', value: currentEngineData.optionAsMetaKeyInstalled, section: 'Keyboard & Terminal' });
+        }
+        if (currentEngineData.appleTerminalSetupInProgress !== undefined) {
+          globalSettings.push({ key: 'appleTerminalSetupInProgress', label: 'Terminal Setup In Progress', type: 'readonly', value: currentEngineData.appleTerminalSetupInProgress, section: 'Keyboard & Terminal' });
+        }
+        if (currentEngineData.appleTerminalBackupPath !== undefined) {
+          globalSettings.push({ key: 'appleTerminalBackupPath', label: 'Terminal Backup Path', type: 'readonly', value: currentEngineData.appleTerminalBackupPath, section: 'Keyboard & Terminal' });
+        }
+        
+        // Usage & Tips Section
+        if (currentEngineData.numStartups !== undefined) {
+          globalSettings.push({ key: 'numStartups', label: 'Number of Startups', type: 'number', value: currentEngineData.numStartups, section: 'Usage & Tips' });
+        }
+        if (currentEngineData.promptQueueUseCount !== undefined) {
+          globalSettings.push({ key: 'promptQueueUseCount', label: 'Prompt Queue Use Count', type: 'number', value: currentEngineData.promptQueueUseCount, section: 'Usage & Tips' });
+        }
+        if (currentEngineData.subscriptionNoticeCount !== undefined) {
+          globalSettings.push({ key: 'subscriptionNoticeCount', label: 'Subscription Notice Count', type: 'number', value: currentEngineData.subscriptionNoticeCount, section: 'Usage & Tips' });
+        }
+        if (currentEngineData.hasAvailableSubscription !== undefined) {
+          globalSettings.push({ key: 'hasAvailableSubscription', label: 'Has Available Subscription', type: 'boolean', value: currentEngineData.hasAvailableSubscription, section: 'Usage & Tips' });
+        }
+        
+        // User & Account Section
+        if (currentEngineData.userID !== undefined) {
+          globalSettings.push({ key: 'userID', label: 'User ID', type: 'readonly', value: currentEngineData.userID, section: 'User & Account' });
+        }
+        if (currentEngineData.firstStartTime !== undefined) {
+          globalSettings.push({ key: 'firstStartTime', label: 'First Start Time', type: 'readonly', value: new Date(currentEngineData.firstStartTime).toLocaleString(), section: 'User & Account' });
+        }
+        
+        // OAuth Account Section (when available)
+        if (currentEngineData.oauthAccount) {
+          const oauth = currentEngineData.oauthAccount;
+          if (oauth.emailAddress) globalSettings.push({ key: 'oauthAccount.emailAddress', label: 'Email Address', type: 'readonly', value: oauth.emailAddress, section: 'OAuth Account' });
+          if (oauth.organizationName) globalSettings.push({ key: 'oauthAccount.organizationName', label: 'Organization Name', type: 'readonly', value: oauth.organizationName, section: 'OAuth Account' });
+          if (oauth.organizationRole) globalSettings.push({ key: 'oauthAccount.organizationRole', label: 'Organization Role', type: 'readonly', value: oauth.organizationRole, section: 'OAuth Account' });
+          if (oauth.workspaceRole) globalSettings.push({ key: 'oauthAccount.workspaceRole', label: 'Workspace Role', type: 'readonly', value: oauth.workspaceRole, section: 'OAuth Account' });
+          if (oauth.accountUuid) globalSettings.push({ key: 'oauthAccount.accountUuid', label: 'Account UUID', type: 'readonly', value: oauth.accountUuid, section: 'OAuth Account' });
+          if (oauth.organizationUuid) globalSettings.push({ key: 'oauthAccount.organizationUuid', label: 'Organization UUID', type: 'readonly', value: oauth.organizationUuid, section: 'OAuth Account' });
+        }
+        
+      } else if (selectedEngine === 'codex') {
+        // Codex specific settings
+        
+        // Model & Provider Section
+        if (currentEngineData.model !== undefined) {
+          globalSettings.push({ key: 'model', label: 'Model', type: 'string', value: currentEngineData.model, section: 'Model & Provider' });
+        }
+        if (currentEngineData.provider !== undefined) {
+          globalSettings.push({ key: 'provider', label: 'Active Provider', type: 'string', value: currentEngineData.provider, section: 'Model & Provider' });
+        }
+        
+        // Add providers as editable objects if available
+        if (currentEngineData.providers && typeof currentEngineData.providers === 'object') {
+          Object.entries(currentEngineData.providers).forEach(([providerKey, provider]: [string, any]) => {
+            globalSettings.push({ 
+              key: `providers.${providerKey}`, 
+              label: `Provider: ${providerKey}`, 
+              type: 'provider' as const, 
+              value: provider, 
+              providerKey,
+              section: 'Model & Provider' 
+            });
+          });
+        }
+        
+        // Conversation Storage Section
+        if (currentEngineData.disableResponseStorage !== undefined) {
+          globalSettings.push({ key: 'disableResponseStorage', label: 'Disable Response Storage', type: 'boolean', value: currentEngineData.disableResponseStorage, section: 'Conversation Storage' });
+        }
+        if (currentEngineData.history?.maxSize !== undefined) {
+          globalSettings.push({ key: 'history.maxSize', label: 'Max History Size', type: 'number', value: currentEngineData.history.maxSize, section: 'Conversation Storage' });
+        }
+        if (currentEngineData.history?.saveHistory !== undefined) {
+          globalSettings.push({ key: 'history.saveHistory', label: 'Save History', type: 'boolean', value: currentEngineData.history.saveHistory, section: 'Conversation Storage' });
+        }
+        
+        // Privacy & Redaction Section
+        if (currentEngineData.flexMode !== undefined) {
+          globalSettings.push({ key: 'flexMode', label: 'Flex Mode', type: 'boolean', value: currentEngineData.flexMode, section: 'Privacy & Redaction' });
+        }
+        if (currentEngineData.reasoningEffort !== undefined) {
+          globalSettings.push({ key: 'reasoningEffort', label: 'Reasoning Effort', type: 'string', value: currentEngineData.reasoningEffort, section: 'Privacy & Redaction' });
+        }
+        if (currentEngineData.history?.sensitivePatterns) {
+          globalSettings.push({ key: 'history.sensitivePatterns', label: 'Sensitive Patterns', type: 'array', value: currentEngineData.history.sensitivePatterns, section: 'Privacy & Redaction' });
+        }
+        
+        // Tools & Resource Limits Section
+        if (currentEngineData.tools?.shell?.maxBytes !== undefined) {
+          globalSettings.push({ key: 'tools.shell.maxBytes', label: 'Shell Max Bytes', type: 'number', value: currentEngineData.tools.shell.maxBytes, section: 'Tools & Resource Limits' });
+        }
+        if (currentEngineData.tools?.shell?.maxLines !== undefined) {
+          globalSettings.push({ key: 'tools.shell.maxLines', label: 'Shell Max Lines', type: 'number', value: currentEngineData.tools.shell.maxLines, section: 'Tools & Resource Limits' });
+        }
+        
+        // Updates & Diagnostics Section
+        if (currentEngineData.lastUpdateCheck !== undefined) {
+          globalSettings.push({ key: 'lastUpdateCheck', label: 'Last Update Check', type: 'readonly', value: new Date(currentEngineData.lastUpdateCheck).toLocaleString(), section: 'Updates & Diagnostics' });
+        }
+        
+        // Add action buttons for Codex-specific functionality
+        globalSettings.push({ key: '__view_history_json__', label: '📄 View history.json', type: 'action', value: 'view_history', section: 'Logs' });
+        globalSettings.push({ key: '__view_sessions__', label: '📁 View sessions/', type: 'action', value: 'view_sessions', section: 'Logs' });
+        globalSettings.push({ key: '__edit_instructions__', label: '📝 Edit instructions.md', type: 'action', value: 'edit_instructions', section: 'System Prompt' });
       }
       
       return globalSettings;
@@ -330,7 +400,7 @@ export function Dashboard() {
       process.exit(0);
     }
     
-    if (input === 'h' && !editingMode && mcpFormMode === 'none' && claudeMdMode === 'none' && !searchMode) {
+    if (input === 'h' && !editingMode && mcpFormMode === 'none' && claudeMdMode === 'none' && !searchMode && !mcpJsonMode) {
       setHelpMode(!helpMode);
       return;
     }
@@ -383,6 +453,15 @@ export function Dashboard() {
         return;
       }
       
+      return;
+    }
+
+    // Handle MCP JSON view mode
+    if (mcpJsonMode) {
+      if (key.escape) {
+        setMcpJsonMode(null);
+        return;
+      }
       return;
     }
 
@@ -652,8 +731,16 @@ export function Dashboard() {
           await loadClaudeMd(selectedProject);
           setClaudeMdMode('view');
         }
+      } else if (setting?.type === 'action' && setting.key === '__view_mcp_json__') {
+        if (selectedProject) {
+          const mcpServers = currentEngineData?.projects[selectedProject]?.mcpServers || {};
+          setMcpJsonMode({ 
+            serverName: 'All MCP Servers', 
+            config: mcpServers 
+          });
+        }
       } else if (setting?.type === 'mcp-server') {
-        setMcpFormMode('delete');
+        setMcpJsonMode({ serverName: setting.serverName, config: setting.value });
       } else if (setting?.type === 'boolean') {
         // Toggle boolean directly
         const patchObj: any = {};
@@ -697,8 +784,8 @@ export function Dashboard() {
       return;
     }
 
-    if (input === 'p') {
-      // Toggle between global and project mode
+    if (input === 'm' && selectedEngine !== 'codex') {
+      // Toggle between global and project mode (not available for Codex)
       setIsProjectMode(!isProjectMode);
       if (!isProjectMode && projects.length > 0) {
         setSelectedProject(projects[0]);
@@ -706,20 +793,19 @@ export function Dashboard() {
       return;
     }
     
-    // Engine switching with Ctrl+Left/Right (works in any mode) - always allow switching
-    if ((key.leftArrow || key.rightArrow) && key.ctrl) {
+    // Engine switching with 'E' key (works in any mode) - always allow switching
+    if (key.return === false && input === 'e') {
       const currentIndex = allSupportedEngines.findIndex(engine => engine.id === selectedEngine);
-      let newIndex;
-      if (key.rightArrow) {
-        newIndex = (currentIndex + 1) % allSupportedEngines.length;
-      } else {
-        newIndex = currentIndex - 1 < 0 ? allSupportedEngines.length - 1 : currentIndex - 1;
-      }
+      const newIndex = (currentIndex + 1) % allSupportedEngines.length;
       if (allSupportedEngines[newIndex]) {
         setSelectedEngine(allSupportedEngines[newIndex].id);
         setSelectedSettingIndex(0); // Reset selection when switching engines
+        // Reset to global mode when switching to Codex (which doesn't support project mode)
+        if (allSupportedEngines[newIndex].id === 'codex') {
+          setIsProjectMode(false);
+        }
       }
-      return; // Don't process other arrow key logic
+      return;
     }
 
     if (key.leftArrow || key.rightArrow) {
@@ -827,7 +913,7 @@ export function Dashboard() {
                   {isSelected ? '> ' : '  '}{setting.label}:
                 </Text>
               </Box>
-              <Box>
+              <Box flexGrow={1}>
                 {setting.type === 'boolean' ? (
                   <Text color={isEditing ? 'yellow' : (setting.value ? 'green' : 'red')} bold={isEditing}>
                     {isEditing ? `[${setting.value ? 'ON' : 'OFF'}] (Press Enter to toggle)` : (setting.value ? 'ON' : 'OFF')}
@@ -845,7 +931,22 @@ export function Dashboard() {
                       <Text dimColor>Args: {(setting.value as any).args.join(' ')}</Text>
                     )}
                     {isSelected && (
-                      <Text dimColor>Press Enter to delete, D for quick delete</Text>
+                      <Text dimColor>Press Enter to view raw JSON, D for quick delete</Text>
+                    )}
+                  </Box>
+                ) : setting.type === 'provider' ? (
+                  <Box flexDirection="column">
+                    <Text color={isSelected ? 'cyan' : 'dimWhite'}>
+                      Name: {(setting.value as any)?.name || 'N/A'}
+                    </Text>
+                    <Text dimColor>
+                      URL: {(setting.value as any)?.baseURL || 'N/A'}
+                    </Text>
+                    <Text dimColor>
+                      Env: {(setting.value as any)?.envKey || 'N/A'}
+                    </Text>
+                    {isSelected && (
+                      <Text dimColor>Press Enter to edit provider</Text>
                     )}
                   </Box>
                 ) : setting.type === 'action' ? (
@@ -856,7 +957,7 @@ export function Dashboard() {
                   <Text dimColor>{String(setting.value)}</Text>
                 ) : setting.type === 'string' || setting.type === 'number' ? (
                   <Box>
-                    <Text color={isSelected ? 'blue' : undefined}>
+                    <Text color={isSelected ? 'blue' : undefined} wrap="wrap">
                       {String(setting.value)}
                     </Text>
                     {isSelected && (
@@ -873,7 +974,7 @@ export function Dashboard() {
                     )}
                   </Box>
                 ) : (
-                  <Text color={isSelected ? 'blue' : undefined}>{String(setting.value)}</Text>
+                  <Text color={isSelected ? 'blue' : undefined} wrap="wrap">{String(setting.value)}</Text>
                 )}
               </Box>
             </Box>
@@ -914,21 +1015,28 @@ export function Dashboard() {
             {selectedEngine === 'claude-code' ? 'Claude Code' : selectedEngine === 'codex' ? 'OpenAI Codex' : 'No Engine'}
             {` (${allSupportedEngines.findIndex(engine => engine.id === selectedEngine) + 1}/${allSupportedEngines.length})`}
           </Text>
-          <Text dimColor> [Ctrl+←→]</Text>
-          <Text> | </Text>
-          <Text bold color={isProjectMode ? 'green' : 'magenta'}>
-            {isProjectMode ? 'Project Mode' : 'Global Mode'}
-          </Text>
-          <Text dimColor> [P]</Text>
-          {isProjectMode && selectedProject && (
+          <Text dimColor> [E]</Text>
+          {selectedEngine !== 'codex' && (
             <>
               <Text> | </Text>
-              <Text color="green">{selectedProject.split('/').pop()}</Text>
-              <Text> - </Text>
-              <Text color="cyan" bold>{selectedProjectSection.toUpperCase()}</Text>
+              <Text bold color={isProjectMode ? 'green' : 'magenta'}>
+                {isProjectMode ? 'Project Mode' : 'Global Mode'}
+              </Text>
+              <Text dimColor> [M]</Text>
             </>
           )}
         </Box>
+        
+        {/* Secondary line for project details */}
+        {isProjectMode && selectedProject && (
+          <Box>
+            <Text color="green">Project: {selectedProject}</Text>
+            <Text dimColor> [Tab]</Text>
+            <Text> | </Text>
+            <Text color="cyan" bold>Section: {selectedProjectSection.toUpperCase()}</Text>
+            <Text dimColor> [←→]</Text>
+          </Box>
+        )}
         
         {/* Status/help line */}
         <Box>
@@ -941,14 +1049,18 @@ export function Dashboard() {
               `SEARCH MODE: "${searchQuery}" | Type to filter | Enter: Apply | Esc: Cancel`
             ) : mcpFormMode !== 'none' ? (
               `MCP FORM: Tab: Next field | Enter: Save | Esc: Cancel`
+            ) : mcpJsonMode ? (
+              `MCP JSON VIEW: ${mcpJsonMode.serverName} | Esc: Close`
             ) : claudeMdMode !== 'none' ? (
               `CLAUDE.md: ${claudeMdMode} mode | Esc: Close`
             ) : helpMode ? (
               `HELP: Scroll to read | H: Close help`
             ) : isProjectMode ? (
-              `Commands: ←→ Sections | Shift+←→ Projects | Ctrl+←→ Engines | ↑↓ Navigate | P: Global | H: Help`
+              `Commands: E: Switch engine | ←→: Sections | Tab: Switch project | ↑↓: Navigate | M: Global | H: Help`
+            ) : selectedEngine === 'codex' ? (
+              `Commands: E: Switch engine | ↑↓: Navigate | Enter: Edit | S: Search | H: Help | Q: Quit`
             ) : (
-              `Commands: Ctrl+←→ Engines | ↑↓ Navigate | Enter: Edit | P: Projects | S: Search | H: Help | Q: Quit`
+              `Commands: E: Switch engine | ↑↓: Navigate | Enter: Edit | M: Projects | S: Search | H: Help | Q: Quit`
             )}
           </Text>
         </Box>
@@ -990,7 +1102,22 @@ export function Dashboard() {
             </>
           )}
           <Text></Text>
-          <Text dimColor>Use Ctrl+←→ to switch between engines</Text>
+          <Text dimColor>Use E to switch between engines</Text>
+        </Box>
+      ) : mcpJsonMode ? (
+        <Box flexDirection="column" height="100%">
+          {/* MCP JSON View - Full screen */}
+          <Box marginTop={1} borderStyle="double" borderColor="blue" padding={1}>
+            <Box flexDirection="column">
+              <Text bold color="blue">MCP Server: {mcpJsonMode.serverName}</Text>
+              <Text></Text>
+              {JSON.stringify(mcpJsonMode.config, null, 2).split('\n').slice(0, availableContentHeight - 8).map((line, index) => (
+                <Text key={index}>{line}</Text>
+              ))}
+              <Text></Text>
+              <Text dimColor>Press Esc to close</Text>
+            </Box>
+          </Box>
         </Box>
       ) : (
         <Box flexDirection="column" height="100%">
@@ -1122,6 +1249,7 @@ export function Dashboard() {
         </Box>
       )}
 
+
       {/* Help Modal */}
       {helpMode && (
         <Box marginTop={1} borderStyle="double" borderColor="green" padding={1}>
@@ -1130,15 +1258,15 @@ export function Dashboard() {
             <Text></Text>
             
             <Text bold>Navigation:</Text>
-            <Text>  ↑↓: Navigate Settings | P: Toggle Global ↔ Projects mode</Text>
+            <Text>  ↑↓: Navigate Settings | M: Toggle Global ↔ Projects mode (Claude Code only)</Text>
             <Text></Text>
             
             <Text bold>Engine Switching (Claude Code, Codex, etc.):</Text>
-            <Text>  Ctrl+←→: Switch between detected engines</Text>
+            <Text>  E: Cycle through detected engines</Text>
             <Text></Text>
             
-            <Text bold>Project Mode:</Text>
-            <Text>  Tab: Next Project | Shift+←→: Previous/Next Project</Text>
+            <Text bold>Project Mode (Claude Code only):</Text>
+            <Text>  Tab: Switch Project | Shift+←→: Previous/Next Project</Text>
             <Text>  ←→: Switch Project Sections (MCP, Tools, etc.)</Text>
             <Text></Text>
             
