@@ -30,7 +30,7 @@
     "dev": "pnpm --recursive run dev",
     "build": "pnpm --recursive run build",
     "prepublishOnly": "pnpm build && node scripts/simple-bundle.js && node scripts/fix-imports.js",
-    "start:web": "./start-web.sh",
+    "start:web": "pnpm --filter @snowfort/config-web run start",
     "test": "pnpm --recursive run test",
     "lint": "pnpm --recursive run lint",
     "typecheck": "pnpm --recursive run typecheck",
