@@ -69,9 +69,10 @@ export class GeminiAdapter extends BaseAdapter {
         additionalProperties: {
           type: 'object',
           properties: {
+            // Stdio transport (most common)
             command: { 
               type: 'string',
-              description: 'Command to run the MCP server'
+              description: 'Command to run the MCP server (for Stdio transport)'
             },
             args: {
               type: 'array',
@@ -81,13 +82,46 @@ export class GeminiAdapter extends BaseAdapter {
             env: {
               type: 'object',
               additionalProperties: { type: 'string' },
-              description: 'Environment variables for the MCP server'
+              description: 'Environment variables for the MCP server (can use $VAR_NAME or ${VAR_NAME})'
+            },
+            cwd: {
+              type: 'string',
+              description: 'Working directory for the MCP server'
+            },
+            
+            // HTTP transport
+            httpUrl: {
+              type: 'string',
+              description: 'HTTP URL for HTTP-based MCP servers'
+            },
+            
+            // SSE transport
+            url: {
+              type: 'string', 
+              description: 'URL for SSE-based MCP servers'
+            },
+            
+            // Common settings
+            timeout: {
+              type: 'number',
+              description: 'Timeout in milliseconds (default: 600000)',
+              minimum: 1000,
+              maximum: 600000
+            },
+            trust: {
+              type: 'boolean',
+              description: 'If true, skips confirmation dialogs (default: false)'
             }
           },
-          required: ['command'],
+          // Either command or httpUrl or url must be present
+          anyOf: [
+            { required: ['command'] },
+            { required: ['httpUrl'] },
+            { required: ['url'] }
+          ],
           additionalProperties: true
         },
-        description: 'MCP servers configured for this instance'
+        description: 'MCP servers configured for this instance. Supports Stdio (command/args), HTTP (httpUrl), and SSE (url) transports.'
       },
       
       // State and session management

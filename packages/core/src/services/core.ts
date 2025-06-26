@@ -3,7 +3,7 @@ import chokidar from 'chokidar';
 import updateNotifier from 'update-notifier';
 import { EngineAdapter, CoreServiceAPI, BackupInfo, EngineState, ServiceConfig } from '../types/index.js';
 import { BackupService } from './backup.js';
-import { ClaudeAdapter, ClaudeSettingsAdapter, CodexAdapter, GeminiAdapter } from '../adapters/index.js';
+import { ClaudeAdapter, CodexAdapter, GeminiAdapter } from '../adapters/index.js';
 
 export class CoreService extends EventEmitter implements CoreServiceAPI {
   private adapters: Map<string, EngineAdapter> = new Map();
@@ -22,7 +22,6 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
   private registerAdapters(): void {
     const adapters = [
       new ClaudeAdapter(),
-      new ClaudeSettingsAdapter(),
       new CodexAdapter(),
       new GeminiAdapter()
     ];
@@ -237,8 +236,12 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
     const result = { ...target };
     
     for (const key in source) {
-      if (source[key] === null || source[key] === undefined) {
-        result[key] = source[key];
+      if (source[key] === undefined) {
+        // Explicitly delete the property when undefined is passed
+        delete result[key];
+      } else if (source[key] === null) {
+        // Also delete the property when null is passed (for JSON compatibility)
+        delete result[key];
       } else if (typeof source[key] === 'object' && !Array.isArray(source[key])) {
         result[key] = this.deepMerge(result[key] || {}, source[key]);
       } else {

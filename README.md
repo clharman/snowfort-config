@@ -39,6 +39,14 @@ npx sfconfig --port 3000
 # or: sfconfig --port 3000
 ```
 
+### Cross-Engine MCP Server Management
+
+One of the key features is the ability to copy MCP server configurations between different AI engines and projects:
+
+![MCP Server Copying Interface](copy-mcp.png)
+
+*Copy MCP servers from other engines (like Gemini CLI) or projects directly into any configuration*
+
 ## 🛠️ Installation Options
 
 ### Via npm/npx (Recommended)
@@ -143,11 +151,11 @@ New AI CLI tools are supported through the **EngineAdapter** interface. Each ada
 - `write(data)` - Safe atomic writes with backup
 - `getConfigPath()` - Resolve configuration file location
 
-Current adapters: `ClaudeAdapter` (`~/.claude.json`), `ClaudeSettingsAdapter` (`~/.claude/settings.json`), `CodexAdapter` (`~/.codex/config.json`), `GeminiAdapter` (`~/.gemini/settings.json`)
+Current adapters: `ClaudeAdapter` (`~/.claude.json`), `CodexAdapter` (`~/.codex/config.json`), `GeminiAdapter` (`~/.gemini/settings.json`)
 
 ## Configuration Schemas & File Formats
 
-Snowfort Config supports **4 engine adapters** with comprehensive configuration management:
+Snowfort Config supports **3 engine adapters** with comprehensive configuration management:
 
 ### 1. Claude Code CLI (`claude-code`)
 
@@ -195,29 +203,7 @@ Each project path contains:
 }
 ```
 
-### 2. Claude Settings (`claude-settings`)
-
-**Configuration Files** (in precedence order):
-1. `~/.claude/settings.json` (global)
-2. `.claude/settings.json` (project shared)
-3. `.claude/settings.local.json` (project local)
-
-**Permission Management:**
-- `permissions.allowedTools`, `permissions.deniedTools` (arrays)
-
-**System Configuration:**
-- `env` (object): Environment variables for Claude sessions
-- `apiKeyHelper` (string): Path to authentication script
-- `cleanupPeriodDays` (number): Chat transcript retention
-- `includeCoAuthoredBy` (boolean): Include Claude byline in commits
-
-**Model Settings:**
-- `defaultModel` (string): Default model for new sessions
-- `maxTokens` (number): Maximum tokens per request
-- `temperature` (number, 0-2): Model response temperature
-- `timeout` (number): Request timeout in milliseconds
-
-### 3. OpenAI Codex (`codex`)
+### 2. OpenAI Codex (`codex`)
 
 **Configuration File**: `~/.codex/config.json`
 
@@ -252,7 +238,7 @@ Each project path contains:
 **Project Management:**
 - `projects` (object): Per-project configurations with usage statistics
 
-### 4. Gemini CLI (`gemini`)
+### 3. Gemini CLI (`gemini`)
 
 **Primary Configuration**: `~/.gemini/settings.json`
 

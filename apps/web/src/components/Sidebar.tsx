@@ -128,7 +128,11 @@ export function Sidebar({
             { id: 'oauth-credentials', label: 'OAuth Credentials', type: 'subsection' },
             { id: 'user-info', label: 'User & Account', type: 'subsection' },
             { id: 'context-file', label: 'Context File (GEMINI.md)', type: 'subsection' },
-            { id: 'session-logs', label: 'Session Logs', type: 'subsection' }
+            { id: 'session-logs', label: 'Session Logs', type: 'subsection' },
+            { id: 'tools-configuration', label: 'Tools Configuration', type: 'subsection' },
+            { id: 'mcp-servers', label: 'MCP Servers', type: 'subsection' },
+            { id: 'advanced-settings', label: 'Advanced Settings', type: 'subsection' },
+            { id: 'session-management', label: 'Session Management', type: 'subsection' }
           ]
         }
       ];

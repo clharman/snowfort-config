@@ -1438,11 +1438,12 @@ Enter your system prompt instructions here. This content will be applied to ever
             return;
           }
           
-          const updatedServers = { ...selectedEngineData.mcpServers };
-          delete updatedServers[serverName];
-          
+          // Use nested object update to delete specific server
           const result = await _onObjectUpdate(selectedEngine, {
-            mcpServers: updatedServers
+            mcpServers: {
+              ...selectedEngineData.mcpServers,
+              [serverName]: null
+            }
           });
           
           if (!result.success) {
@@ -1487,72 +1488,42 @@ Enter your system prompt instructions here. This content will be applied to ever
 
         return (
           <div>
-            <div className="mb-6">
-              <h5 className="font-medium text-gray-900 dark:text-white mb-3">MCP Servers</h5>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Configure Model-Context Protocol servers for enhanced functionality
-              </p>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-md font-semibold text-gray-900 dark:text-white">MCP Servers</h4>
+              <button
+                onClick={() => {
+                  setMcpJsonValue(JSON.stringify(selectedEngineData.mcpServers || {}, null, 2));
+                  setShowMcpJsonEditor(true);
+                }}
+                className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+              >
+                Edit Raw JSON
+              </button>
             </div>
-            
             {selectedEngineData.mcpServers && Object.keys(selectedEngineData.mcpServers).length > 0 ? (
               <div className="space-y-4">
-                {Object.entries(selectedEngineData.mcpServers).map(([serverName, server]: [string, any]) => (
+                {Object.entries(selectedEngineData.mcpServers).map(([serverName, serverConfig]: [string, any]) => (
                   <div key={serverName} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                    {editingMcpServer === serverName ? (
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Command
-                          </label>
-                          <input
-                            type="text"
-                            value={editingValues[`mcpServer_${serverName}_command`] || ''}
-                            onChange={(e) => setEditingValues(prev => ({ ...prev, [`mcpServer_${serverName}_command`]: e.target.value }))}
-                            className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Arguments (space-separated)
-                          </label>
-                          <input
-                            type="text"
-                            value={editingValues[`mcpServer_${serverName}_args`] || ''}
-                            onChange={(e) => setEditingValues(prev => ({ ...prev, [`mcpServer_${serverName}_args`]: e.target.value }))}
-                            className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Environment Variables (one per line: KEY=value)
-                          </label>
-                          <textarea
-                            value={editingValues[`mcpServer_${serverName}_env`] || ''}
-                            onChange={(e) => setEditingValues(prev => ({ ...prev, [`mcpServer_${serverName}_env`]: e.target.value }))}
-                            className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                            rows={3}
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => handleGeminiMcpServerSave(serverName)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                          >
-                            Save
-                          </button>
-                          <button 
-                            onClick={handleGeminiMcpServerCancel}
-                            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between mb-3">
-                          <h6 className="font-medium text-gray-900 dark:text-white">{serverName}</h6>
-                          <div className="flex gap-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <h5 className="font-medium text-gray-900 dark:text-white">{serverName}</h5>
+                      <div className="flex gap-2">
+                        {editingMcpServer === serverName ? (
+                          <>
+                            <button 
+                              onClick={() => handleGeminiMcpServerSave(serverName)}
+                              className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                            >
+                              Save
+                            </button>
+                            <button 
+                              onClick={handleGeminiMcpServerCancel}
+                              className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
                             <button 
                               onClick={() => handleGeminiMcpServerEdit(serverName)}
                               className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -1563,59 +1534,118 @@ Enter your system prompt instructions here. This content will be applied to ever
                               onClick={() => handleGeminiMcpServerDelete(serverName)}
                               className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
                             >
-                              Delete
+                              Remove
                             </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Command
+                        </label>
+                        {editingMcpServer === serverName ? (
+                          <input
+                            type="text"
+                            value={editingValues[`mcpServer_${serverName}_command`] || ''}
+                            onChange={(e) => setEditingValues(prev => ({ ...prev, [`mcpServer_${serverName}_command`]: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                          />
+                        ) : (
+                          <div className="text-sm font-mono text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                            {serverConfig.command}
                           </div>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <div><span className="font-medium">Command:</span> <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{server.command}</code></div>
-                          {server.args && server.args.length > 0 && (
-                            <div><span className="font-medium">Args:</span> <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{server.args.join(' ')}</code></div>
-                          )}
-                          {server.env && Object.keys(server.env).length > 0 && (
-                            <div>
-                              <span className="font-medium">Environment:</span>
-                              <div className="mt-1 space-y-1">
-                                {Object.entries(server.env).map(([key, value]: [string, any]) => (
-                                  <div key={key} className="text-xs">
-                                    <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{key}={value}</code>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Arguments (space-separated)
+                        </label>
+                        {editingMcpServer === serverName ? (
+                          <input
+                            type="text"
+                            value={editingValues[`mcpServer_${serverName}_args`] || ''}
+                            onChange={(e) => setEditingValues(prev => ({ ...prev, [`mcpServer_${serverName}_args`]: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            placeholder="--option1 value1 --option2 value2"
+                          />
+                        ) : (
+                          <div className="text-sm font-mono text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                            {serverConfig.args && serverConfig.args.length > 0 ? serverConfig.args.join(' ') : 'No arguments'}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Environment Variables (one per line: KEY=value)
+                        </label>
+                        {editingMcpServer === serverName ? (
+                          <textarea
+                            value={editingValues[`mcpServer_${serverName}_env`] || ''}
+                            onChange={(e) => setEditingValues(prev => ({ ...prev, [`mcpServer_${serverName}_env`]: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            rows={3}
+                            placeholder="API_KEY=your_key&#10;DEBUG=true"
+                          />
+                        ) : (
+                          <div className="text-sm font-mono text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                            {serverConfig.env && Object.keys(serverConfig.env).length > 0 ? (
+                              Object.entries(serverConfig.env).map(([key, value]) => (
+                                <div key={key}>{key}={String(value)}</div>
+                              ))
+                            ) : (
+                              'No environment variables'
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
                 
-                <div className="mt-4">
+                <div className="flex gap-2 mt-4">
                   <button 
                     onClick={() => setShowAddMcpForm(!showAddMcpForm)}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                   >
                     {showAddMcpForm ? 'Cancel' : 'Add MCP Server'}
+                  </button>
+                  <button 
+                    onClick={() => setShowCopyModal(true)}
+                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                  >
+                    Copy MCP Servers from Elsewhere
                   </button>
                 </div>
               </div>
             ) : (
               <div className="text-center py-8">
                 <p className="text-gray-500 dark:text-gray-400 mb-4">No MCP servers configured</p>
-                <button 
-                  onClick={() => setShowAddMcpForm(!showAddMcpForm)}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                >
-                  {showAddMcpForm ? 'Cancel' : 'Add First MCP Server'}
-                </button>
+                <div className="flex gap-2 justify-center">
+                  <button 
+                    onClick={() => setShowAddMcpForm(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Add MCP Server
+                  </button>
+                  <button 
+                    onClick={() => setShowCopyModal(true)}
+                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                  >
+                    Copy MCP Servers from Elsewhere
+                  </button>
+                </div>
               </div>
             )}
             
-            {/* Add MCP Server Form */}
             {showAddMcpForm && (
-              <div className="mt-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <h6 className="font-medium text-gray-900 dark:text-white mb-4">Add MCP Server</h6>
-                <div className="space-y-4">
+              <div className="mt-6 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg p-4">
+                <h5 className="font-medium text-gray-900 dark:text-white mb-3">Add New MCP Server</h5>
+                <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Server Name
@@ -1625,7 +1655,7 @@ Enter your system prompt instructions here. This content will be applied to ever
                       value={newMcpServer.name}
                       onChange={(e) => setNewMcpServer(prev => ({ ...prev, name: e.target.value }))}
                       className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      placeholder="e.g., playwright, filesystem, git"
+                      placeholder="my-server"
                     />
                   </div>
                   <div>
@@ -1649,7 +1679,7 @@ Enter your system prompt instructions here. This content will be applied to ever
                       value={newMcpServer.args}
                       onChange={(e) => setNewMcpServer(prev => ({ ...prev, args: e.target.value }))}
                       className="w-full px-3 py-2 text-sm font-mono border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                      placeholder="@playwright/mcp@latest --image-responses allow"
+                      placeholder="@my/mcp-server@latest --option value"
                     />
                   </div>
                   <div>
@@ -1680,6 +1710,274 @@ Enter your system prompt instructions here. This content will be applied to ever
                       className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
                     >
                       Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* JSON Editor Modal */}
+            {showMcpJsonEditor && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit MCP Servers JSON</h3>
+                    <button
+                      onClick={() => setShowMcpJsonEditor(false)}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="mb-4">
+                    <textarea
+                      value={mcpJsonValue}
+                      onChange={(e) => setMcpJsonValue(e.target.value)}
+                      className="w-full h-96 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                      placeholder="Enter MCP servers JSON configuration..."
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => setShowMcpJsonEditor(false)}
+                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const parsedData = JSON.parse(mcpJsonValue);
+                          const result = await _onObjectUpdate(selectedEngine, {
+                            mcpServers: parsedData
+                          });
+                          if (result.success) {
+                            setShowMcpJsonEditor(false);
+                          } else {
+                            alert('Failed to save: ' + (result.errors || []).join(', '));
+                          }
+                        } catch (error) {
+                          alert('Invalid JSON format');
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Cross-Engine Copy Modal */}
+            {showCopyModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Copy MCP Servers from Elsewhere</h3>
+                    <button
+                      onClick={() => setShowCopyModal(false)}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="overflow-y-auto max-h-96">
+                    {/* Copy from other engines */}
+                    {engines
+                      .filter(([engineId]) => engineId !== selectedEngine && ['claude-code', 'codex', 'gemini'].includes(engineId))
+                      .map(([engineId, engineData]) => {
+                        const mcpServers = engineData.mcpServers || {};
+                        const serverCount = Object.keys(mcpServers).length;
+                        
+                        if (serverCount === 0) return null;
+                        
+                        return (
+                          <div key={`engine-${engineId}`} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <h4 className="font-medium text-gray-900 dark:text-white">
+                                  {engineId === 'claude-code' ? 'Claude Code' : 
+                                   engineId === 'codex' ? 'OpenAI Codex' : 
+                                   engineId === 'gemini' ? 'Gemini CLI' : engineId} (Global)
+                                </h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{serverCount} MCP server{serverCount !== 1 ? 's' : ''}</p>
+                              </div>
+                              <button
+                                onClick={async () => {
+                                  const currentServers = selectedEngineData.mcpServers || {};
+                                  const mergedServers = { ...currentServers };
+                                  
+                                  // Add servers with conflict resolution
+                                  Object.entries(mcpServers).forEach(([name, config]) => {
+                                    let finalName = name;
+                                    let counter = 1;
+                                    while (mergedServers[finalName]) {
+                                      finalName = `${name}_${counter}`;
+                                      counter++;
+                                    }
+                                    mergedServers[finalName] = config;
+                                  });
+                                  
+                                  const result = await _onObjectUpdate(selectedEngine, {
+                                    mcpServers: mergedServers
+                                  });
+                                  if (result.success) {
+                                    setShowCopyModal(false);
+                                  } else {
+                                    alert('Failed to copy: ' + (result.errors || []).join(', '));
+                                  }
+                                }}
+                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                              >
+                                Copy All
+                              </button>
+                            </div>
+                            <div className="space-y-2">
+                              {Object.entries(mcpServers).map(([serverName, serverConfig]: [string, any]) => (
+                                <div key={serverName} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                                  <div>
+                                    <span className="font-mono text-sm text-gray-900 dark:text-white">{serverName}</span>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{serverConfig.command || serverConfig.httpUrl || serverConfig.url}</span>
+                                  </div>
+                                  <button
+                                    onClick={async () => {
+                                      const currentServers = selectedEngineData.mcpServers || {};
+                                      let finalName = serverName;
+                                      let counter = 1;
+                                      while (currentServers[finalName]) {
+                                        finalName = `${serverName}_${counter}`;
+                                        counter++;
+                                      }
+                                      
+                                      const result = await _onObjectUpdate(selectedEngine, {
+                                        mcpServers: {
+                                          ...currentServers,
+                                          [finalName]: serverConfig
+                                        }
+                                      });
+                                      if (result.success) {
+                                        setShowCopyModal(false);
+                                      } else {
+                                        alert('Failed to copy: ' + (result.errors || []).join(', '));
+                                      }
+                                    }}
+                                    className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                  >
+                                    Copy
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })
+                      .filter(Boolean)}
+                    
+                    {/* Copy from Claude Code projects */}
+                    {selectedEngine !== 'claude-code' && engines.find(([id]) => id === 'claude-code')?.[1]?.projects && 
+                      Object.entries(engines.find(([id]) => id === 'claude-code')?.[1]?.projects || {})
+                        .map(([path, data]: [string, any]) => {
+                          const mcpServers = data.mcpServers || {};
+                          const serverCount = Object.keys(mcpServers).length;
+                          
+                          if (serverCount === 0) return null;
+                          
+                          return (
+                            <div key={path} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <h4 className="font-medium text-gray-900 dark:text-white">Claude Code Project: {path}</h4>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">{serverCount} MCP server{serverCount !== 1 ? 's' : ''}</p>
+                                </div>
+                                <button
+                                  onClick={async () => {
+                                    const currentServers = selectedEngineData.mcpServers || {};
+                                    const mergedServers = { ...currentServers };
+                                    
+                                    // Add servers with conflict resolution
+                                    Object.entries(mcpServers).forEach(([name, config]) => {
+                                      let finalName = name;
+                                      let counter = 1;
+                                      while (mergedServers[finalName]) {
+                                        finalName = `${name}_${counter}`;
+                                        counter++;
+                                      }
+                                      mergedServers[finalName] = config;
+                                    });
+                                    
+                                    const result = await _onObjectUpdate(selectedEngine, {
+                                      mcpServers: mergedServers
+                                    });
+                                    if (result.success) {
+                                      setShowCopyModal(false);
+                                    } else {
+                                      alert('Failed to copy: ' + (result.errors || []).join(', '));
+                                    }
+                                  }}
+                                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  Copy All
+                                </button>
+                              </div>
+                              <div className="space-y-2">
+                                {Object.entries(mcpServers).map(([serverName, serverConfig]: [string, any]) => (
+                                  <div key={serverName} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                                    <div>
+                                      <span className="font-mono text-sm text-gray-900 dark:text-white">{serverName}</span>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{serverConfig.command}</span>
+                                    </div>
+                                    <button
+                                      onClick={async () => {
+                                        const currentServers = selectedEngineData.mcpServers || {};
+                                        let finalName = serverName;
+                                        let counter = 1;
+                                        while (currentServers[finalName]) {
+                                          finalName = `${serverName}_${counter}`;
+                                          counter++;
+                                        }
+                                        
+                                        const result = await _onObjectUpdate(selectedEngine, {
+                                          mcpServers: {
+                                            ...currentServers,
+                                            [finalName]: serverConfig
+                                          }
+                                        });
+                                        if (result.success) {
+                                          setShowCopyModal(false);
+                                        } else {
+                                          alert('Failed to copy: ' + (result.errors || []).join(', '));
+                                        }
+                                      }}
+                                      className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                    >
+                                      Copy
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })
+                        .filter(Boolean)}
+                        
+                    {/* No sources message */}
+                    {engines.filter(([engineId]) => engineId !== selectedEngine && ['claude-code', 'codex', 'gemini'].includes(engineId))
+                      .every(([, engineData]) => !engineData.mcpServers || Object.keys(engineData.mcpServers).length === 0) &&
+                     (!engines.find(([id]) => id === 'claude-code')?.[1]?.projects || 
+                      Object.entries(engines.find(([id]) => id === 'claude-code')?.[1]?.projects || {})
+                        .every(([, data]: [string, any]) => !data.mcpServers || Object.keys(data.mcpServers).length === 0)) && (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500 dark:text-gray-400">No other engines or projects with MCP servers found</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end mt-4">
+                    <button
+                      onClick={() => setShowCopyModal(false)}
+                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                    >
+                      Close
                     </button>
                   </div>
                 </div>
@@ -2056,7 +2354,7 @@ Enter your system prompt instructions here. This content will be applied to ever
                                   onClick={() => setShowCopyModal(true)}
                                   className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
                                 >
-                                  Copy from Project
+                                  Copy MCP Servers from Elsewhere
                                 </button>
                               </div>
                             )}
@@ -2075,7 +2373,7 @@ Enter your system prompt instructions here. This content will be applied to ever
                                 onClick={() => setShowCopyModal(true)}
                                 className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
                               >
-                                Copy from Project
+                                Copy MCP Servers from Elsewhere
                               </button>
                             </div>
                           </div>
@@ -2204,12 +2502,12 @@ Enter your system prompt instructions here. This content will be applied to ever
                           </div>
                         )}
                         
-                        {/* Copy from Project Modal */}
+                        {/* Copy MCP Servers from Elsewhere Modal */}
                         {showCopyModal && (
                           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden">
                               <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Copy MCP Servers from Another Project</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Copy MCP Servers from Elsewhere</h3>
                                 <button
                                   onClick={() => setShowCopyModal(false)}
                                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -2295,11 +2593,98 @@ Enter your system prompt instructions here. This content will be applied to ever
                                     );
                                   })
                                   .filter(Boolean)}
+                                
+                                {/* Copy from global engines */}
+                                {engines
+                                  .filter(([engineId]) => engineId !== selectedEngine && ['claude-code', 'codex', 'gemini'].includes(engineId))
+                                  .map(([engineId, engineData]) => {
+                                    const mcpServers = engineData.mcpServers || {};
+                                    const serverCount = Object.keys(mcpServers).length;
+                                    
+                                    if (serverCount === 0) return null;
+                                    
+                                    return (
+                                      <div key={`engine-${engineId}`} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                          <div>
+                                            <h4 className="font-medium text-gray-900 dark:text-white">
+                                              {engineId === 'claude-code' ? 'Claude Code' : 
+                                               engineId === 'codex' ? 'OpenAI Codex' : 
+                                               engineId === 'gemini' ? 'Gemini CLI' : engineId} (Global)
+                                            </h4>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">{serverCount} MCP server{serverCount !== 1 ? 's' : ''}</p>
+                                          </div>
+                                          <button
+                                            onClick={async () => {
+                                              const currentServers = projectData.mcpServers || {};
+                                              const mergedServers = { ...currentServers };
+                                              
+                                              // Add servers with conflict resolution
+                                              Object.entries(mcpServers).forEach(([name, config]) => {
+                                                let finalName = name;
+                                                let counter = 1;
+                                                while (mergedServers[finalName]) {
+                                                  finalName = `${name}_${counter}`;
+                                                  counter++;
+                                                }
+                                                mergedServers[finalName] = config;
+                                              });
+                                              
+                                              await _onProjectUpdate(selectedEngine, projectPath, {
+                                                mcpServers: mergedServers
+                                              });
+                                              setShowCopyModal(false);
+                                            }}
+                                            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                                          >
+                                            Copy All
+                                          </button>
+                                        </div>
+                                        <div className="space-y-2">
+                                          {Object.entries(mcpServers).map(([serverName, serverConfig]: [string, any]) => (
+                                            <div key={serverName} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                                              <div>
+                                                <span className="font-mono text-sm text-gray-900 dark:text-white">{serverName}</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{serverConfig.command || serverConfig.httpUrl || serverConfig.url}</span>
+                                              </div>
+                                              <button
+                                                onClick={async () => {
+                                                  const currentServers = projectData.mcpServers || {};
+                                                  let finalName = serverName;
+                                                  let counter = 1;
+                                                  while (currentServers[finalName]) {
+                                                    finalName = `${serverName}_${counter}`;
+                                                    counter++;
+                                                  }
+                                                  
+                                                  await _onProjectUpdate(selectedEngine, projectPath, {
+                                                    mcpServers: {
+                                                      ...currentServers,
+                                                      [finalName]: serverConfig
+                                                    }
+                                                  });
+                                                  setShowCopyModal(false);
+                                                }}
+                                                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                              >
+                                                Copy
+                                              </button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                  .filter(Boolean)}
+                                
+                                {/* No sources message */}
                                 {Object.entries(selectedEngineData.projects || {})
                                   .filter(([path]) => path !== projectPath)
-                                  .every(([, data]: [string, any]) => !data.mcpServers || Object.keys(data.mcpServers).length === 0) && (
+                                  .every(([, data]: [string, any]) => !data.mcpServers || Object.keys(data.mcpServers).length === 0) &&
+                                 engines.filter(([engineId]) => engineId !== selectedEngine && ['claude-code', 'codex', 'gemini'].includes(engineId))
+                                  .every(([, engineData]) => !engineData.mcpServers || Object.keys(engineData.mcpServers).length === 0) && (
                                   <div className="text-center py-8">
-                                    <p className="text-gray-500 dark:text-gray-400">No other projects with MCP servers found</p>
+                                    <p className="text-gray-500 dark:text-gray-400">No other projects or engines with MCP servers found</p>
                                   </div>
                                 )}
                               </div>
