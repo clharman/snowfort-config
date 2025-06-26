@@ -49,7 +49,7 @@ npx sfconfig --port 3000
 
 One of the key features is the ability to copy MCP server configurations between different AI engines and projects:
 
-![MCP Server Copying Interface](copy-mcp.png)
+![MCP Server Copying Interface](https://github.com/user-attachments/assets/a575d3f6-acee-490e-8df6-88c7143aff5f)
 
 *Copy MCP servers from other engines (like Gemini CLI) or projects directly into any configuration*
 
