@@ -13,7 +13,7 @@ const program = new Command();
 program
   .name('sfconfig')
   .description('Snowfort Config - AI CLI configuration manager (launches web UI by default)')
-  .version('0.0.5')
+  .version('0.0.6')
   .option('--tui', 'Launch terminal UI')
   .option('--web', 'Launch web UI (default)')
   .option('--port <port>', 'Custom port for web UI (default: 4040)', '4040')

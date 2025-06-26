@@ -1,6 +1,6 @@
 {
   "name": "sfconfig",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Lightweight utility for managing generative AI CLI configurations",
   "type": "module",
   "engines": {
