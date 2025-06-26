@@ -43,7 +43,7 @@ export function UpdateNotification({ onDismiss }: UpdateNotificationProps) {
   }
 
   return (
-    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md">
+    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md">
       <div className="bg-blue-50 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-lg shadow-lg p-4">
         <div className="flex items-start justify-between">
           <div className="flex-1 pr-3">

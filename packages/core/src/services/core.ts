@@ -337,31 +337,57 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
 
   private async getCurrentVersion(): Promise<string> {
     try {
-      // Try to find package.json in the project root
-      const { readFile } = await import('fs/promises');
-      const { join, dirname } = await import('path');
-      const { fileURLToPath } = await import('url');
+      // First try to read from the update-notifier cache or installed package
+      const updateNotifier = await import('update-notifier');
+      const notifier = updateNotifier.default({
+        pkg: { name: 'sfconfig', version: '0.1.1' } // Will use this as fallback
+      });
       
-      // Navigate up from the current file to find package.json
-      let currentDir = dirname(fileURLToPath(import.meta.url));
-      for (let i = 0; i < 5; i++) {
-        try {
-          const packagePath = join(currentDir, 'package.json');
-          const packageContent = await readFile(packagePath, 'utf8');
-          const packageData = JSON.parse(packageContent);
-          if (packageData.name === 'sfconfig') {
-            return packageData.version;
+      // Try to find the actual installed version
+      try {
+        const { readFile } = await import('fs/promises');
+        const { join, dirname } = await import('path');
+        const { fileURLToPath } = await import('url');
+        
+        // Navigate up from the current file to find package.json
+        let currentDir = dirname(fileURLToPath(import.meta.url));
+        for (let i = 0; i < 10; i++) {
+          try {
+            const packagePath = join(currentDir, 'package.json');
+            const packageContent = await readFile(packagePath, 'utf8');
+            const packageData = JSON.parse(packageContent);
+            if (packageData.name === 'sfconfig') {
+              return packageData.version;
+            }
+          } catch (err) {
+            // Continue searching
           }
-        } catch (err) {
-          // Continue searching
+          currentDir = dirname(currentDir);
         }
-        currentDir = dirname(currentDir);
+        
+        // Try alternative paths for npm-installed packages
+        try {
+          const { execSync } = await import('child_process');
+          const result = execSync('npm list -g sfconfig --depth=0 --json', { 
+            encoding: 'utf8', 
+            stdio: 'pipe' 
+          });
+          const data = JSON.parse(result);
+          if (data.dependencies?.sfconfig?.version) {
+            return data.dependencies.sfconfig.version;
+          }
+        } catch (npmError) {
+          // Ignore npm command errors
+        }
+        
+      } catch (error) {
+        // Ignore file system errors
       }
       
-      // Fallback if package.json not found
-      return '0.0.9';
+      // Fallback to current release version
+      return '0.1.1';
     } catch (error) {
-      return '0.0.9';
+      return '0.1.1';
     }
   }
 
