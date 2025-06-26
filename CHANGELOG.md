@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2024-06-26
+
 ### Added
 - GitHub Actions CI/CD pipeline with Node.js 18, 20, 22 support
 - Security audit checks in CI pipeline
@@ -17,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub issue templates (bug report, feature request, engine support)
 - Pull request template with comprehensive checklists
 - Repository badges for CI, npm, license, and tooling
+- ESLint configuration with TypeScript support
+- Update notification system in web interface
+- Improved version detection and management
+
+### Fixed
+- CI/CD pipeline failures and build dependencies
+- TypeScript compilation errors in release workflow
+- ESLint configuration and linting issues
+- Build order dependencies between packages
 
 ## [0.0.9] - 2024-06-26
 
