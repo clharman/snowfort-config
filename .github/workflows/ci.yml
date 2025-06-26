@@ -31,6 +31,9 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile || pnpm install
     
+    - name: Build core packages first
+      run: pnpm --filter @snowfort/config-core run build
+    
     - name: Run linting
       run: pnpm lint
     
@@ -40,7 +43,7 @@ jobs:
     - name: Run tests
       run: pnpm test || echo "No tests found, skipping"
     
-    - name: Build project
+    - name: Build all projects
       run: pnpm build
     
     - name: Test CLI binary
