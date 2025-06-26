@@ -167,7 +167,7 @@ This project uses a **build-first development workflow**:
 
 - ❌ Don't assume hot-reload development workflow
 - ❌ Don't add proxy configurations to vite.config.ts  
-- ❌ Don't use `./start-dev.sh` in automation (causes timeouts)
+- ✅ Use `./scripts/start.sh` for automation (exits immediately)
 - ✅ Always build first, then run integrated server
 - ✅ Use `./scripts/start.sh` for automation
 

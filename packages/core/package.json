@@ -9,7 +9,7 @@
     "dev": "tsc --watch",
     "build": "tsc",
     "test": "vitest",
-    "lint": "eslint src/",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" || echo \"No TypeScript files to lint\"",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },

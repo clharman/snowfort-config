@@ -7,7 +7,7 @@
 pnpm install
 
 # 2. Start development server (builds + runs)
-./start-dev.sh
+./scripts/start.sh
 
 # 3. Open browser
 open http://localhost:4040
@@ -17,7 +17,7 @@ open http://localhost:4040
 
 ```bash
 # Start development server
-./start-dev.sh
+./scripts/start.sh
 
 # Build everything
 pnpm build
@@ -43,7 +43,7 @@ lsof -i :4040
 pkill -f "node.*dist-server"
 
 # Restart
-./start-dev.sh
+./scripts/start.sh
 ```
 
 ### Build Errors
@@ -60,7 +60,7 @@ pnpm build
 
 ## 📁 Key Files
 
-- `./start-dev.sh` - Development server startup script
+- `./scripts/start.sh` - Development server startup script
 - `apps/web/src/` - React frontend source
 - `apps/web/src/server/` - Express server source
 - `packages/core/` - Core configuration management

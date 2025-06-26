@@ -115,7 +115,7 @@ pnpm --filter @snowfort/config-web run build
 
 # IMPORTANT: Web development uses build-first workflow
 # Start development server (builds frontend + starts server)
-./start-dev.sh
+./scripts/start.sh
 
 # Alternative: Manual development setup
 cd apps/web && pnpm build && node dist-server/index.js &
