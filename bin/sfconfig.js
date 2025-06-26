@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import open from 'open';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,7 +13,7 @@ const program = new Command();
 program
   .name('sfconfig')
   .description('Snowfort Config - AI CLI configuration manager')
-  .version('0.0.6')
+  .version('0.0.7')
   .option('--port <port>', 'Custom port for web UI (default: 4040)', '4040')
   .option('--config <path>', 'Custom config path')
   .option('--no-update-check', 'Disable update check')
@@ -46,7 +47,12 @@ function launchWeb(options) {
   
   if (!options.noOpen) {
     setTimeout(() => {
-      console.log(`\nWeb UI available at: http://localhost:${options.port}`);
+      const url = `http://localhost:${options.port}`;
+      console.log(`\nWeb UI available at: ${url}`);
+      console.log('Opening browser...');
+      open(url).catch(() => {
+        console.log('Could not open browser automatically. Please visit the URL above.');
+      });
     }, 2000);
   }
   

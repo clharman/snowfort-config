@@ -559,7 +559,9 @@ async function startServer() {
     console.log('Starting HTTP server...');
     const server = app.listen(port, () => {
       console.log(`✅ Snowfort Config web server ready at http://localhost:${port}`);
-      console.log(`   Detected ${Object.keys(initialState).length} configuration engines`);
+      const detectedCount = Object.values(initialState).filter((engine: any) => engine._meta?.detected).length;
+      const totalCount = Object.keys(initialState).length;
+      console.log(`   Detected ${detectedCount} configuration engines (${totalCount} supported)`);
     });
     
     // Wait for server to actually be listening
