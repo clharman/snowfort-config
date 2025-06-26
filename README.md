@@ -5,11 +5,8 @@ A lightweight, cross-platform utility for reading, displaying, and safely editin
 ## 🚀 Quick Install & Run
 
 ```bash
-# Launch Web UI (default - no installation required)
+# Launch Web UI (no installation required)
 npx sfconfig
-
-# Launch Terminal UI (no installation required)
-npx sfconfig --tui
 
 # Or install globally
 npm install -g sfconfig
@@ -19,24 +16,14 @@ sfconfig --help
 ## ✨ Features
 
 - **Multi-Engine Support**: Manages configurations for Claude Code CLI, OpenAI Codex, and Gemini CLI
-- **Dual Interface**: Both Terminal UI (TUI) and Web interface
+- **Web Interface**: Clean, intuitive browser-based configuration management
 - **Real-time Updates**: File watching with live configuration updates
 - **Safe Editing**: Automatic backups and JSON schema validation
 - **MCP Server Management**: Complete MCP (Model Context Protocol) server configuration editing
 - **Color-coded Interface**: Visual distinction between different AI engines
-- **Dark/Light Themes**: Full theme support across all interfaces
+- **Dark/Light Themes**: Full theme support
 
 ## 📖 Usage Examples
-
-### Terminal UI
-
-<img width="706" alt="image" src="https://github.com/user-attachments/assets/2cbbbe95-2da8-4b95-b2b1-4ed15a256f53" />
-
-```bash
-# Launch Terminal UI
-npx sfconfig --tui
-# or: sfconfig --tui (if installed globally)
-```
 
 ### Web Interface
 
@@ -60,7 +47,7 @@ npx sfconfig --port 3000
 npm install -g sfconfig
 
 # Or use with npx (no installation required)
-npx sfconfig --help
+npx sfconfig
 ```
 
 ### From Source
@@ -82,20 +69,13 @@ pnpm build
 # Default behavior (launches web UI)
 sfconfig                    # Launch web UI on port 4040
 
-# Interface selection
-sfconfig --tui              # Launch terminal UI
-sfconfig --web              # Launch web UI (explicit)
-
 # Web UI options
 sfconfig --port 3000        # Custom port
 sfconfig --no-open          # Don't auto-open browser
 sfconfig --no-update-check  # Disable update notifications
-
-# Terminal UI options
-sfconfig --tui --config /path/to/config.json    # Custom config path
+sfconfig --config /path     # Custom config path
 
 # Subcommand style (also supported)
-sfconfig tui [options]      # Terminal UI subcommand
 sfconfig web [options]      # Web UI subcommand
 
 # Show help
@@ -151,9 +131,8 @@ curl -X POST -H "Content-Type: application/json" \
 ## Architecture
 
 ### Core Service Pattern
-The application uses a centralized **CoreService** that manages configuration state and acts as an event emitter. Both TUI and web interfaces consume this service:
+The application uses a centralized **CoreService** that manages configuration state and acts as an event emitter. The web interface consumes this service:
 
-- **TUI**: Directly instantiates CoreService in React hooks
 - **Web**: Express server hosts CoreService and exposes REST API + Server-Sent Events
 
 ### Engine Adapter System
@@ -330,7 +309,7 @@ Same structure as Claude Code:
 1. **File Discovery**: Each adapter scans for its configuration files
 2. **Hierarchical Loading**: Claude settings support precedence-based loading
 3. **Real-time Monitoring**: chokidar watches for configuration changes
-4. **Event Broadcasting**: State changes notify TUI/web interfaces via events
+4. **Event Broadcasting**: State changes notify the web interface via events
 
 ### Safe Configuration Management
 - **Automatic Backups**: Timestamped `.json` files in `.sfconfig-backups/`
@@ -339,7 +318,7 @@ Same structure as Claude Code:
 - **Deep Merging**: Patch operations preserve unknown configuration fields
 
 ### Multi-Engine Support
-The unified interface allows:
+The unified web interface allows:
 - **Cross-engine Viewing**: See all AI CLI configurations in one place
 - **Consistent Editing**: Same interface for different configuration formats
 - **MCP Server Management**: Unified MCP server configuration across engines

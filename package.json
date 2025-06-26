@@ -11,8 +11,6 @@
   },
   "files": [
     "bin/",
-    "apps/tui/dist/",
-    "apps/tui/packages/",
     "apps/web/dist/",
     "apps/web/dist-server/", 
     "apps/web/packages/",

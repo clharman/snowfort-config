@@ -40,9 +40,6 @@ pnpm clean
 
 ### Testing & Running
 ```bash
-# Test TUI locally
-node apps/tui/dist/index.js
-
 # Start web development server (RECOMMENDED - avoids timeouts)
 ./scripts/start.sh
 
@@ -57,7 +54,7 @@ node apps/tui/dist/index.js
 
 # Test CLI binary
 node bin/sfconfig.js --help
-node bin/sfconfig.js tui
+node bin/sfconfig.js web
 node bin/sfconfig.js web --port 3000
 
 # Run tests
@@ -159,9 +156,8 @@ This project uses a **build-first development workflow**, NOT the typical React 
 ## Architecture Overview
 
 ### Core Service Pattern
-The application uses a centralized **CoreService** that manages configuration state and acts as an event emitter. Both TUI and web interfaces consume this service:
+The application uses a centralized **CoreService** that manages configuration state and acts as an event emitter. The web interface consumes this service:
 
-- **TUI**: Directly instantiates CoreService in React hooks
 - **Web**: Express server hosts CoreService and exposes REST API + Server-Sent Events
 
 ### Engine Adapter System
@@ -177,7 +173,6 @@ Current adapters: `ClaudeAdapter` (`~/.claude.json`), `CodexAdapter` (`~/.codex/
 ### Workspace Structure
 ```
 packages/core/     # CoreService, adapters, backup system
-apps/tui/         # Ink-based terminal interface
 apps/web/         # React SPA + Express server
 bin/sfconfig.js   # CLI entry point using commander
 ```
@@ -186,7 +181,6 @@ bin/sfconfig.js   # CLI entry point using commander
 - **File Watching**: Core service uses chokidar to watch config files
 - **Event Broadcasting**: State changes emit events to connected clients
 - **IPC Communication**: 
-  - TUI: Direct event listeners on CoreService
   - Web: Server-Sent Events (`/api/events`) for real-time browser updates
 
 ### Safe Configuration Editing
@@ -204,7 +198,7 @@ The web app has dual build outputs:
 ## Key Implementation Notes
 
 ### TypeScript Configuration
-- Core & TUI use `moduleResolution: "bundler"` for modern ESM
+- Core package uses `moduleResolution: "bundler"` for modern ESM
 - Web server uses `moduleResolution: "node"` for Express compatibility
 - All packages use ESM (`"type": "module"`) with `.js` imports
 
@@ -220,7 +214,6 @@ The web app has dual build outputs:
 4. Test with both `detect()` false and true cases
 
 ### Development & Testing Requirements
-- Always test both TUI and web interfaces after core changes
 - Use the web interface to visually verify configuration detection and editing
 - Test file watching by manually editing config files while app is running
 - Verify backup creation and restoration functionality
