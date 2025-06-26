@@ -13,7 +13,7 @@ const program = new Command();
 program
   .name('sfconfig')
   .description('Snowfort Config - AI CLI configuration manager')
-  .version('0.0.7')
+  .version('0.0.9')
   .option('--port <port>', 'Custom port for web UI (default: 4040)', '4040')
   .option('--config <path>', 'Custom config path')
   .option('--no-update-check', 'Disable update check')

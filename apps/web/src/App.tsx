@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCore } from './hooks/useCore';
 import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
+import { UpdateNotification } from './components/UpdateNotification';
 
 function App() {
   const { state, loading, error, patch } = useCore();
@@ -228,6 +229,9 @@ function App() {
 
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900 transition-colors">
+      {/* Update Notification */}
+      <UpdateNotification />
+      
       {/* Save Status Notification */}
       {saveStatus !== 'idle' && (
         <div className="fixed top-4 right-4 z-50">

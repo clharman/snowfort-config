@@ -264,31 +264,104 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
     return success;
   }
 
-  async checkUpdate(): Promise<{ latest: string; current: string; url: string }> {
+  async checkUpdate(): Promise<{ latest: string; current: string; url: string; hasUpdate: boolean }> {
     if (this.config.noUpdateCheck) {
+      const currentVersion = await this.getCurrentVersion();
       return {
-        latest: '0.0.1',
-        current: '0.0.1',
-        url: ''
+        latest: currentVersion,
+        current: currentVersion,
+        url: '',
+        hasUpdate: false
       };
     }
     
     try {
-      const notifier = updateNotifier({
-        pkg: { name: '@snowfort/config', version: '0.0.1' }
-      });
+      const currentVersion = await this.getCurrentVersion();
       
-      return {
-        latest: notifier.update?.latest || '0.0.1',
-        current: '0.0.1',
-        url: 'https://github.com/snowfort/config'
-      };
+      // Try direct npm registry check first (for more reliable testing)
+      try {
+        const response = await fetch('https://registry.npmjs.org/sfconfig/latest');
+        const data = await response.json();
+        const latestVersion = data.version;
+        
+        const hasUpdate = this.isNewerVersion(latestVersion, currentVersion);
+        
+        return {
+          latest: latestVersion,
+          current: currentVersion,
+          url: 'https://github.com/snowfort-ai/config',
+          hasUpdate
+        };
+      } catch (registryError) {
+        // Fallback to update-notifier
+        const notifier = updateNotifier({
+          pkg: { name: 'sfconfig', version: currentVersion },
+          updateCheckInterval: 1000 * 60 * 60 * 24 // Check once per day
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const hasUpdate = notifier.update !== undefined;
+        
+        return {
+          latest: notifier.update?.latest || currentVersion,
+          current: currentVersion,
+          url: 'https://github.com/snowfort-ai/config',
+          hasUpdate
+        };
+      }
     } catch (error) {
+      const currentVersion = await this.getCurrentVersion();
       return {
-        latest: '0.0.1',
-        current: '0.0.1',
-        url: ''
+        latest: currentVersion,
+        current: currentVersion,
+        url: '',
+        hasUpdate: false
       };
+    }
+  }
+
+  private isNewerVersion(latest: string, current: string): boolean {
+    const latestParts = latest.split('.').map(n => parseInt(n, 10));
+    const currentParts = current.split('.').map(n => parseInt(n, 10));
+    
+    for (let i = 0; i < Math.max(latestParts.length, currentParts.length); i++) {
+      const latestPart = latestParts[i] || 0;
+      const currentPart = currentParts[i] || 0;
+      
+      if (latestPart > currentPart) return true;
+      if (latestPart < currentPart) return false;
+    }
+    
+    return false;
+  }
+
+  private async getCurrentVersion(): Promise<string> {
+    try {
+      // Try to find package.json in the project root
+      const { readFile } = await import('fs/promises');
+      const { join, dirname } = await import('path');
+      const { fileURLToPath } = await import('url');
+      
+      // Navigate up from the current file to find package.json
+      let currentDir = dirname(fileURLToPath(import.meta.url));
+      for (let i = 0; i < 5; i++) {
+        try {
+          const packagePath = join(currentDir, 'package.json');
+          const packageContent = await readFile(packagePath, 'utf8');
+          const packageData = JSON.parse(packageContent);
+          if (packageData.name === 'sfconfig') {
+            return packageData.version;
+          }
+        } catch (err) {
+          // Continue searching
+        }
+        currentDir = dirname(currentDir);
+      }
+      
+      // Fallback if package.json not found
+      return '0.0.9';
+    } catch (error) {
+      return '0.0.9';
     }
   }
 

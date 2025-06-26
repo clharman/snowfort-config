@@ -1,5 +1,11 @@
 # Snowfort Config
 
+[![CI](https://github.com/snowfort-ai/config/actions/workflows/ci.yml/badge.svg)](https://github.com/snowfort-ai/config/actions/workflows/ci.yml)
+[![npm version](https://badge.fury.io/js/sfconfig.svg)](https://badge.fury.io/js/sfconfig)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg)](https://pnpm.io/)
+
 A lightweight, cross-platform utility for reading, displaying, and safely editing local configuration files for generative AI CLIs including **Claude Code CLI**, **OpenAI Codex**, and **Gemini CLI**.
 
 ## 🚀 Quick Install & Run

@@ -19,7 +19,7 @@ export interface CoreServiceAPI {
   patch(patchObj: any): Promise<{ success: boolean; errors: string[] }>;
   listBackups(engine?: string): Promise<BackupInfo[]>;
   restoreBackup(path: string): Promise<boolean>;
-  checkUpdate(): Promise<{ latest: string; current: string; url: string }>;
+  checkUpdate(): Promise<{ latest: string; current: string; url: string; hasUpdate: boolean }>;
 }
 
 export interface ServiceConfig {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 
 export interface NavigationItem {
@@ -143,6 +143,75 @@ export function Sidebar({
 
   const navigationItems = getNavigationItems();
 
+  // Filter navigation items based on search query
+  const filteredNavigationItems = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return navigationItems;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    
+    return navigationItems.map(section => {
+      // Find matching children
+      const matchingChildren = section.children?.map(child => {
+        // Check if the child matches
+        const childMatches = child.label.toLowerCase().includes(query);
+        
+        // Filter grandchildren that match
+        const matchingGrandchildren = child.children?.filter(grandchild =>
+          grandchild.label.toLowerCase().includes(query)
+        ) || [];
+        
+        // Include child if it matches or has matching grandchildren
+        if (childMatches || matchingGrandchildren.length > 0) {
+          return {
+            ...child,
+            children: childMatches ? child.children : matchingGrandchildren
+          };
+        }
+        
+        return null;
+      }).filter(Boolean) || [];
+
+      // Check if section name itself matches
+      const sectionMatches = section.label.toLowerCase().includes(query);
+      
+      // Include section if it matches or has matching children
+      if (sectionMatches || matchingChildren.length > 0) {
+        return {
+          ...section,
+          children: sectionMatches ? section.children : matchingChildren
+        };
+      }
+      
+      return null;
+    }).filter(Boolean) as NavigationItem[];
+  }, [navigationItems, searchQuery]);
+
+  // Auto-expand sections that contain matches
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    
+    const newExpanded = new Set(expandedSections);
+    
+    filteredNavigationItems.forEach(section => {
+      if (section.children?.length) {
+        newExpanded.add(section.id);
+        
+        // Also expand project sections if they have matching children
+        section.children.forEach(child => {
+          if (child.children?.some(grandchild =>
+            grandchild.label.toLowerCase().includes(searchQuery.toLowerCase())
+          )) {
+            newExpanded.add(child.id);
+          }
+        });
+      }
+    });
+    
+    setExpandedSections(newExpanded);
+  }, [searchQuery]);
+
   const toggleSection = (sectionId: string, item: NavigationItem) => {
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(sectionId)) {
@@ -286,7 +355,7 @@ export function Sidebar({
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto p-4 space-y-1">
         {selectedEngine ? (
-          navigationItems.map(item => renderNavigationItem(item))
+          filteredNavigationItems.map(item => renderNavigationItem(item))
         ) : (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             {availableEngines.length === 0 ? (

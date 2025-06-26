@@ -1,0 +1,140 @@
+name: New AI CLI Engine Support
+description: Request support for a new AI CLI tool
+title: "[Engine]: Add support for "
+labels: ["enhancement", "engine-support", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for requesting support for a new AI CLI engine! This helps us understand which tools our community uses.
+        
+  - type: input
+    id: engine-name
+    attributes:
+      label: Engine Name
+      description: What is the name of the AI CLI tool?
+      placeholder: "e.g., OpenAI CLI, Anthropic CLI, Custom Tool"
+    validations:
+      required: true
+      
+  - type: input
+    id: config-location
+    attributes:
+      label: Configuration File Location
+      description: Where does this tool store its configuration?
+      placeholder: "e.g., ~/.openai/config.json, ~/.anthropic/settings.yaml"
+    validations:
+      required: true
+      
+  - type: textarea
+    id: config-structure
+    attributes:
+      label: Configuration Structure
+      description: What does the configuration file look like? (Remove any sensitive data)
+      placeholder: |
+        {
+          "api_key": "sk-...",
+          "default_model": "gpt-4",
+          "temperature": 0.7
+        }
+      render: json
+    validations:
+      required: true
+      
+  - type: input
+    id: homepage
+    attributes:
+      label: Tool Homepage/Repository
+      description: Link to the official website or repository
+      placeholder: "https://github.com/example/ai-cli"
+    validations:
+      required: false
+      
+  - type: textarea
+    id: installation
+    attributes:
+      label: Installation Instructions
+      description: How do users typically install this tool?
+      placeholder: |
+        npm install -g ai-cli
+        # or
+        pip install ai-cli
+        # or
+        brew install ai-cli
+    validations:
+      required: true
+      
+  - type: checkboxes
+    id: config-features
+    attributes:
+      label: Configuration Features
+      description: What can be configured in this tool?
+      options:
+        - label: API keys/tokens
+        - label: Model selection
+        - label: Temperature/sampling parameters
+        - label: System prompts
+        - label: Output formatting
+        - label: Proxy settings
+        - label: Custom endpoints
+        - label: Plugin/extension settings
+        - label: Other (describe below)
+        
+  - type: dropdown
+    id: config-format
+    attributes:
+      label: Configuration Format
+      description: What format does the configuration use?
+      options:
+        - JSON
+        - YAML
+        - TOML
+        - INI
+        - Custom format
+    validations:
+      required: true
+      
+  - type: textarea
+    id: validation-rules
+    attributes:
+      label: Validation Requirements
+      description: Are there any specific validation rules or constraints for the configuration?
+      placeholder: |
+        - API key must start with 'sk-'
+        - Temperature must be between 0 and 2
+        - Model must be one of: gpt-3.5-turbo, gpt-4
+    validations:
+      required: false
+      
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: How do you use this tool and why would Snowfort Config support be valuable?
+      placeholder: "I use this tool for... and would benefit from centralized configuration because..."
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: popularity
+    attributes:
+      label: Tool Popularity
+      description: How widely used is this tool?
+      options:
+        - Very popular (10k+ users)
+        - Moderately popular (1k-10k users)
+        - Growing (100-1k users)
+        - Niche/specialized
+        - Personal/internal tool
+    validations:
+      required: false
+      
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Any other relevant information about this tool or its configuration
+      placeholder: "Additional details..."
+    validations:
+      required: false
