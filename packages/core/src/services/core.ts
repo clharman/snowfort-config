@@ -243,7 +243,13 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
         // Also delete the property when null is passed (for JSON compatibility)
         delete result[key];
       } else if (typeof source[key] === 'object' && !Array.isArray(source[key])) {
-        result[key] = this.deepMerge(result[key] || {}, source[key]);
+        // For certain specific fields like mcpServers, replace instead of merge
+        // This allows for proper removal of entries
+        if (key === 'mcpServers' || Object.keys(source[key]).length === 0) {
+          result[key] = { ...source[key] };
+        } else {
+          result[key] = this.deepMerge(result[key] || {}, source[key]);
+        }
       } else {
         result[key] = source[key];
       }

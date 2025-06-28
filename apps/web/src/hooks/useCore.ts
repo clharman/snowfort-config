@@ -17,27 +17,46 @@ export function useCore() {
 
   useEffect(() => {
     let eventSource: EventSource | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    let isComponentMounted = true;
     
     const connect = () => {
+      // Cleanup any existing connection
+      if (eventSource) {
+        eventSource.close();
+      }
+      
       eventSource = new EventSource('/api/events');
       
       eventSource.onmessage = (event) => {
+        if (!isComponentMounted) return;
+        
         const data = JSON.parse(event.data);
         if (data.type === 'state') {
           setState(data.payload);
-          if (loading) setLoading(false);
+          setLoading(false);
+          setError(null);
         }
       };
       
       eventSource.onerror = () => {
+        if (!isComponentMounted) return;
+        
         setError('Connection lost');
-        setTimeout(connect, 5000);
+        if (eventSource) {
+          eventSource.close();
+        }
+        
+        // Reconnect with exponential backoff
+        reconnectTimeout = setTimeout(connect, 5000);
       };
     };
 
     const fetchInitialState = async () => {
       try {
         const response = await fetch('/api/state');
+        if (!isComponentMounted) return;
+        
         if (response.ok) {
           const data = await response.json();
           setState(data);
@@ -45,9 +64,12 @@ export function useCore() {
           throw new Error('Failed to fetch state');
         }
       } catch (err) {
+        if (!isComponentMounted) return;
         setError(err instanceof Error ? err.message : 'Failed to load');
       } finally {
-        setLoading(false);
+        if (isComponentMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -55,11 +77,15 @@ export function useCore() {
     connect();
 
     return () => {
+      isComponentMounted = false;
       if (eventSource) {
         eventSource.close();
       }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
     };
-  }, [loading]);
+  }, []); // Empty dependency array - only run once
 
   const patch = async (patchObj: any) => {
     try {

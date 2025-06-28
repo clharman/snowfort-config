@@ -3010,8 +3010,40 @@ Enter your system prompt instructions here. This content will be applied to ever
                       <div>
                         <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-4">Trust & Onboarding</h4>
                         <div className="space-y-4">
-                          {renderBooleanSetting('hasTrustDialogAccepted', 'Trust Dialog Accepted', 'Whether the trust dialog has been accepted for this project')}
-                          {renderNumberSetting('projectOnboardingSeenCount', 'Onboarding Seen Count', 'Number of times project onboarding was shown', false)}
+                          {/* Trust Dialog Accepted */}
+                          {projectData.hasTrustDialogAccepted !== undefined && (
+                            <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-gray-700">
+                              <div>
+                                <div className="font-medium text-gray-900 dark:text-white">Trust Dialog Accepted</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Whether the trust dialog has been accepted for this project</div>
+                              </div>
+                              <button
+                                onClick={() => _onProjectUpdate(selectedEngine, projectPath, { hasTrustDialogAccepted: !projectData.hasTrustDialogAccepted })}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                                  projectData.hasTrustDialogAccepted ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                                }`}
+                              >
+                                <span
+                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                    projectData.hasTrustDialogAccepted ? 'translate-x-6' : 'translate-x-1'
+                                  }`}
+                                />
+                              </button>
+                            </div>
+                          )}
+                          
+                          {/* Onboarding Seen Count */}
+                          {projectData.projectOnboardingSeenCount !== undefined && (
+                            <div className="py-4 border-b border-gray-200 dark:border-gray-700">
+                              <div className="flex items-center justify-between mb-2">
+                                <div>
+                                  <div className="font-medium text-gray-900 dark:text-white">Onboarding Seen Count</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Number of times project onboarding was shown</div>
+                                </div>
+                                <span className="text-sm text-gray-600 dark:text-gray-400">{projectData.projectOnboardingSeenCount}</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );

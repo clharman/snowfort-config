@@ -519,13 +519,25 @@ app.get('/api/events', (req, res) => {
   connectedClients.push(res);
 
   const keepAlive = setInterval(() => {
-    res.write('data: {"type":"ping"}\n\n');
+    try {
+      res.write('data: {"type":"ping"}\n\n');
+    } catch (error) {
+      // Client disconnected, clean up
+      clearInterval(keepAlive);
+      connectedClients = connectedClients.filter(client => client !== res);
+    }
   }, 30000);
 
-  req.on('close', () => {
+  const cleanup = () => {
     clearInterval(keepAlive);
     connectedClients = connectedClients.filter(client => client !== res);
-  });
+  };
+
+  req.on('close', cleanup);
+  req.on('error', cleanup);
+  
+  // Send initial ping to establish connection
+  res.write('data: {"type":"ping"}\n\n');
 });
 
 app.get('*', (_req, res) => {
