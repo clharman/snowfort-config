@@ -70,7 +70,7 @@
 - [ ] `pnpm typecheck` passes
 - [ ] `pnpm test` passes
 - [ ] `pnpm build` succeeds
-- [ ] CLI binary works (`node bin/sfconfig.js --help`)
+- [ ] CLI binary works (`node bin/snowfort-config.js --help`)
 - [ ] Web interface starts and loads correctly
 
 ## Screenshots/Demo

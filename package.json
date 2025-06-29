@@ -1,5 +1,5 @@
 {
-  "name": "sfconfig",
+  "name": "@snowfort/config",
   "version": "0.1.3",
   "description": "Lightweight utility for managing generative AI CLI configurations",
   "type": "module",
@@ -7,7 +7,7 @@
     "node": ">=18"
   },
   "bin": {
-    "sfconfig": "bin/sfconfig.js"
+    "snowfort-config": "bin/snowfort-config.js"
   },
   "files": [
     "bin/",

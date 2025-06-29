@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 const program = new Command();
 
 program
-  .name('sfconfig')
+  .name('snowfort-config')
   .description('Snowfort Config - AI CLI configuration manager')
   .version('0.0.9')
   .option('--port <port>', 'Custom port for web UI (default: 4040)', '4040')

@@ -1,7 +1,7 @@
 # Snowfort Config
 
 [![CI](https://github.com/snowfort-ai/config/actions/workflows/ci.yml/badge.svg)](https://github.com/snowfort-ai/config/actions/workflows/ci.yml)
-[![npm version](https://badge.fury.io/js/sfconfig.svg)](https://badge.fury.io/js/sfconfig)
+[![npm version](https://badge.fury.io/js/@snowfort%2Fconfig.svg)](https://badge.fury.io/js/@snowfort%2Fconfig)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg)](https://pnpm.io/)
@@ -12,11 +12,11 @@ A lightweight, cross-platform utility for reading, displaying, and safely editin
 
 ```bash
 # Launch Web UI (no installation required)
-npx sfconfig
+npx @snowfort/config
 
 # Or install globally
-npm install -g sfconfig
-sfconfig --help
+npm install -g @snowfort/config
+snowfort-config --help
 ```
 
 ## ✨ Features
@@ -37,12 +37,12 @@ sfconfig --help
 
 ```bash
 # Launch Web UI (default)
-npx sfconfig
-# or: sfconfig (if installed globally)
+npx @snowfort/config
+# or: snowfort-config (if installed globally)
 
 # Launch Web UI with custom port
-npx sfconfig --port 3000
-# or: sfconfig --port 3000
+npx @snowfort/config --port 3000
+# or: snowfort-config --port 3000
 ```
 
 ### Cross-Engine MCP Server Management
@@ -58,10 +58,10 @@ One of the key features is the ability to copy MCP server configurations between
 ### Via npm/npx (Recommended)
 ```bash
 # Install globally
-npm install -g sfconfig
+npm install -g @snowfort/config
 
 # Or use with npx (no installation required)
-npx sfconfig
+npx @snowfort/config
 ```
 
 ### From Source
@@ -81,19 +81,19 @@ pnpm build
 
 ```bash
 # Default behavior (launches web UI)
-sfconfig                    # Launch web UI on port 4040
+snowfort-config                    # Launch web UI on port 4040
 
 # Web UI options
-sfconfig --port 3000        # Custom port
-sfconfig --no-open          # Don't auto-open browser
-sfconfig --no-update-check  # Disable update notifications
-sfconfig --config /path     # Custom config path
+snowfort-config --port 3000        # Custom port
+snowfort-config --no-open          # Don't auto-open browser
+snowfort-config --no-update-check  # Disable update notifications
+snowfort-config --config /path     # Custom config path
 
 # Subcommand style (also supported)
-sfconfig web [options]      # Web UI subcommand
+snowfort-config web [options]      # Web UI subcommand
 
 # Show help
-sfconfig --help
+snowfort-config --help
 ```
 
 ## 🛠️ Development
@@ -304,7 +304,7 @@ Same structure as Claude Code:
 4. **Event Broadcasting**: State changes notify the web interface via events
 
 ### Safe Configuration Management
-- **Automatic Backups**: Timestamped `.json` files in `.sfconfig-backups/`
+- **Automatic Backups**: Timestamped `.json` files in `.snowfort-config-backups/`
 - **Schema Validation**: AJV validation (currently permissive to allow unknown fields)
 - **Atomic Operations**: Failed writes never corrupt original files
 - **Deep Merging**: Patch operations preserve unknown configuration fields

@@ -220,7 +220,7 @@ pnpm test          # Ensure tests pass
 pnpm build         # Ensure build succeeds
 
 # Test CLI functionality
-node bin/sfconfig.js --help
+node bin/snowfort-config.js --help
 ./scripts/start.sh && ./scripts/status.sh
 
 # Commit with conventional format

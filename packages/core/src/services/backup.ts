@@ -5,7 +5,7 @@ import { BackupInfo } from '../types/index.js';
 export class BackupService {
   private backupDir: string;
 
-  constructor(backupDir: string = path.join(process.cwd(), '.sfconfig-backups')) {
+  constructor(backupDir: string = path.join(process.cwd(), '.snowfort-config-backups')) {
     this.backupDir = backupDir;
   }
 

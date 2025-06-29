@@ -286,7 +286,7 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
       
       // Try direct npm registry check first (for more reliable testing)
       try {
-        const response = await fetch('https://registry.npmjs.org/sfconfig/latest');
+        const response = await fetch('https://registry.npmjs.org/@snowfort/config/latest');
         const data = await response.json();
         const latestVersion = data.version;
         
@@ -301,7 +301,7 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
       } catch (registryError) {
         // Fallback to update-notifier
         const notifier = updateNotifier({
-          pkg: { name: 'sfconfig', version: currentVersion },
+          pkg: { name: '@snowfort/config', version: currentVersion },
           updateCheckInterval: 1000 * 60 * 60 * 24 // Check once per day
         });
         
@@ -346,7 +346,7 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
       // First try to read from the update-notifier cache or installed package
       const updateNotifier = await import('update-notifier');
       const notifier = updateNotifier.default({
-        pkg: { name: 'sfconfig', version: '0.1.1' } // Will use this as fallback
+        pkg: { name: '@snowfort/config', version: '0.1.1' } // Will use this as fallback
       });
       
       // Try to find the actual installed version
@@ -362,7 +362,7 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
             const packagePath = join(currentDir, 'package.json');
             const packageContent = await readFile(packagePath, 'utf8');
             const packageData = JSON.parse(packageContent);
-            if (packageData.name === 'sfconfig') {
+            if (packageData.name === '@snowfort/config') {
               return packageData.version;
             }
           } catch (err) {
@@ -374,13 +374,13 @@ export class CoreService extends EventEmitter implements CoreServiceAPI {
         // Try alternative paths for npm-installed packages
         try {
           const { execSync } = await import('child_process');
-          const result = execSync('npm list -g sfconfig --depth=0 --json', { 
+          const result = execSync('npm list -g @snowfort/config --depth=0 --json', { 
             encoding: 'utf8', 
             stdio: 'pipe' 
           });
           const data = JSON.parse(result);
-          if (data.dependencies?.sfconfig?.version) {
-            return data.dependencies.sfconfig.version;
+          if (data.dependencies?.['@snowfort/config']?.version) {
+            return data.dependencies['@snowfort/config'].version;
           }
         } catch (npmError) {
           // Ignore npm command errors

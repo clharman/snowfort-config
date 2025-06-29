@@ -48,11 +48,11 @@ jobs:
     
     - name: Test CLI binary
       run: |
-        node bin/sfconfig.js --help
-        timeout 10s node bin/sfconfig.js --no-open --port 3001 &
+        node bin/snowfort-config.js --help
+        timeout 10s node bin/snowfort-config.js --no-open --port 3001 &
         sleep 5
         curl -f http://localhost:3001/api/state || exit 1
-        pkill -f "node bin/sfconfig.js" || true
+        pkill -f "node bin/snowfort-config.js" || true
 
   security:
     runs-on: ubuntu-latest

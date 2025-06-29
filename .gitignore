@@ -97,7 +97,7 @@ Thumbs.db
 
 # Backup files
 *.backup
-.sfconfig-backups/
+.snowfort-config-backups/
 
 # Example data for development
 examples/logs/
