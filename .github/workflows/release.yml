@@ -44,10 +44,6 @@ jobs:
       with:
         generate_release_notes: true
         fail_on_unmatched_files: false
-        files: |
-          packages/core/dist/**
-          apps/web/dist/**
-          bin/**
     
     - name: Publish to npm
       run: npm publish --provenance --access public
